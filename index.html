@@ -146,6 +146,7 @@ details summary{cursor:pointer;color:var(--mute);margin:8px 0}
 .hint{color:var(--amber);font-size:.82rem;margin-top:4px}
 .grule{color:var(--mute);font-size:.72rem;margin-top:4px;text-align:right}
 /* Live-Ansicht für Gäste: nur lesen */
+body.landing .host-only{display:none!important}
 body.viewonly .host-only,body.viewonly .gact,body.viewonly .hint{display:none!important}
 body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-events:none}
 .sec{margin-bottom:28px}
@@ -172,7 +173,9 @@ body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-even
   <div class="logo">🎯 <span class="idyll">Idyll</span> <span>Dart-Manager</span></div>
   <div class="chips" id="chips"></div>
   <div class="tools">
-    <button class="btn sm" data-act="authToggle" id="authBtn" hidden>🔐 Anmelden</button>
+    <button class="btn sm" data-act="leave" id="leaveBtn" hidden>☰ Turniere</button>
+    <button class="btn sm" data-act="copyLink" id="linkBtn" hidden>🔗 Link</button>
+    <button class="btn sm" data-act="authToggle" id="authBtn" hidden>🔐 Bearbeiten (Passwort)</button>
     <button class="btn sm host-only" data-act="export" title="Backup anzeigen / kopieren">⬇ Backup</button>
     <button class="btn sm host-only" data-act="import" title="Backup einspielen">⬆ Import</button>
     <button class="btn sm danger host-only" data-act="reset">Turnier zurücksetzen</button>
@@ -411,16 +414,20 @@ function load(){
   return defaultState();
 }
 /* ---------- Cloud (Firebase) – wird von config.js + Modul-Skript unten aktiviert ---------- */
-// role: 'local' (ohne Cloud) | 'host' (angemeldeter Besitzer, darf schreiben) | 'guest' (Live-Ansicht, nur lesen)
-const CLOUD = {mode:'local', role:'local', status:'', push:null, login:null, logout:null, user:null};
+// mode: 'local' (ohne Cloud) | 'cloud'
+// view (nur Cloud): 'landing' (Turnier öffnen/anlegen) | 'tournament'
+// role: 'local' | 'host' (Bearbeiter mit Turnier-Passwort) | 'guest' (Live-Ansicht, nur lesen)
+const CLOUD = {mode:'local', view:'tournament', role:'local', status:'', code:'', name:'', available:false,
+               push:null, open:null, create:null, startEdit:null, stopEdit:null, recents:[]};
 const isViewOnly = () => CLOUD.role==='guest';
+const inLanding = () => CLOUD.mode==='cloud' && CLOUD.view==='landing';
 let pushTimer = null;
 function save(){
   if (isViewOnly()) return;
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){}
-  if (CLOUD.role==='host' && CLOUD.push){
+  if (CLOUD.mode!=='cloud'){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+  else if (CLOUD.role==='host' && CLOUD.push){
     S._rev = (S._rev||0)+1;
-    clearTimeout(pushTimer); pushTimer = setTimeout(()=>CLOUD.push(S), 400);
+    clearTimeout(pushTimer); pushTimer = setTimeout(()=>{ pushTimer=null; CLOUD.push(S); }, 400);
   }
 }
 function commit(){ save(); render(); }
@@ -969,8 +976,9 @@ function renderChips(ctx){
   const n = S.mode==='double'?`${S.teams?S.teams.length:Math.floor(S.players.length/2)} Teams`:`${S.players.length} Spieler`;
   c.push(`<span class="chip">${S.mode==='double'?'Doppel':'Einzel'} · <b>${n}</b></span>`);
   if (CLOUD.mode==='cloud'){
-    const st = {ok:'☁ live synchron', connecting:'☁ verbinde …', error:'☁ Verbindungsproblem – nur lokal gespeichert'}[CLOUD.status||'connecting'];
-    c.push(`<span class="chip">${isViewOnly()?'👀 Live-Ansicht · ':''}<b>${st}</b></span>`);
+    const st = {ok:'☁ live synchron', connecting:'☁ verbinde …', error:'☁ Verbindungsproblem'}[CLOUD.status||'connecting'];
+    c.push(`<span class="chip">🏷 <b>${esc(CLOUD.name||'Turnier')}</b> · Code <b>${esc(CLOUD.code)}</b></span>`);
+    c.push(`<span class="chip">${isViewOnly()?'👀 Live-Ansicht · ':'✏️ Bearbeiter · '}<b>${st}</b></span>`);
   }
   if (!S.started) c.push(`<span class="chip">Phase: <b>Setup</b></span>`);
   else {
@@ -986,14 +994,42 @@ function renderChips(ctx){
 }
 
 const TABS = [['setup','Setup & Auslosung'],['vor','Vorrunde'],['end','Endrunde & Platzierung'],['result','Gesamtergebnis & Stats']];
+function renderLanding(){
+  const rec = (CLOUD.recents||[]).map(r=>`<button class="btn sm" data-act="openRecent" data-code="${esc(r.code)}">${esc(r.name||'Turnier')} · ${esc(r.code)}</button>`).join(' ');
+  return `<div class="cols">
+    <div class="card"><h2>Turnier öffnen</h2>
+      <p class="muted small">Code aus dem Link oder von der Person, die das Turnier angelegt hat. Zuschauen geht ohne Passwort.</p>
+      <div class="row"><input type="text" id="codeIn" placeholder="Turnier-Code, z. B. AB12CD" autocomplete="off" maxlength="12" style="text-transform:uppercase">
+      <button class="btn primary" data-act="openCode">Öffnen</button></div>
+      ${rec?`<div style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Zuletzt geöffnet</div><div class="row">${rec}</div></div>`:''}</div>
+    <div class="card"><h2>Neues Turnier anlegen</h2>
+      <p class="muted small">Das Passwort brauchst du (und wer mitmachen soll), um Ergebnisse einzutragen. Alle anderen sehen nur die Live-Ansicht.</p>
+      <div style="display:grid;gap:8px">
+        <input type="text" id="tName" placeholder="Name, z. B. Dartturnier Herbst" autocomplete="off" maxlength="60">
+        <input type="password" id="tPw" placeholder="Bearbeiten-Passwort (mind. 8 Zeichen)" autocomplete="new-password">
+        <input type="password" id="tPw2" placeholder="Passwort wiederholen" autocomplete="new-password">
+        <button class="btn primary" data-act="createT">Turnier anlegen</button></div></div></div>
+    <div class="muted small" style="margin-top:16px">Ohne Internet oder Konto? <button class="btn sm ghost" data-act="goLocal">Lokal im Browser spielen</button></div>`;
+}
 function render(){
+  document.body.classList.toggle('landing', inLanding());
+  if (inLanding()){
+    document.getElementById('chips').innerHTML = '<span class="chip">Mehrere Turniere · <b>Cloud</b></span>';
+    document.getElementById('tabs').innerHTML = '';
+    document.body.classList.remove('viewonly');
+    ['authBtn','leaveBtn','linkBtn'].forEach(id=>{ document.getElementById(id).hidden = true; });
+    $app.innerHTML = renderLanding();
+    return;
+  }
   let ctx;
   try { ctx = buildCtx(); if (ensureStarters(ctx)) save(); } catch(e){ console.error(e); ctx = {units:getUnits(),U:{},started:false}; }
   document.getElementById('chips').innerHTML = renderChips(ctx);
   document.body.classList.toggle('viewonly', isViewOnly());
   const ab = document.getElementById('authBtn');
   ab.hidden = CLOUD.mode!=='cloud';
-  ab.textContent = CLOUD.user ? '🔓 Abmelden' : '🔐 Anmelden';
+  ab.textContent = CLOUD.role==='host' ? '🔓 Bearbeiten beenden' : '🔐 Bearbeiten (Passwort)';
+  document.getElementById('leaveBtn').hidden = !(CLOUD.available);
+  document.getElementById('linkBtn').hidden = !(CLOUD.mode==='cloud' && CLOUD.code);
   if (isViewOnly() && S.tab==='setup') S.tab = 'vor';
   document.getElementById('tabs').innerHTML = TABS.filter(([k])=>!(isViewOnly()&&k==='setup')).map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-tab="${k}">${l}${k==='end'&&ctx.vorDone&&!ctx.allDone?'<span class="dot"></span>':''}</button>`).join('');
   const fn = {setup:renderSetup, vor:renderVor, end:renderEnd, result:renderResult}[S.tab] || renderSetup;
@@ -1117,9 +1153,26 @@ document.addEventListener('click', e=>{
   if (tab){ S.tab = tab.dataset.tab; if (isViewOnly()) render(); else commit(); window.scrollTo(0,0); return; }
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, key = el.dataset.key;
-  if (isViewOnly() && a!=='authToggle') return;          // Live-Ansicht: nichts verändern
+  const cloudActs = ['authToggle','leave','copyLink','openCode','openRecent','createT','goLocal'];
+  if (isViewOnly() && !cloudActs.includes(a)) return;     // Live-Ansicht: nichts verändern
   switch(a){
-    case 'authToggle': if (CLOUD.user){ CLOUD.logout && CLOUD.logout(); } else { CLOUD.login && CLOUD.login(); } break;
+    case 'authToggle': if (CLOUD.role==='host') CLOUD.stopEdit && CLOUD.stopEdit(); else CLOUD.startEdit && CLOUD.startEdit(); break;
+    case 'leave': CLOUD.leave && CLOUD.leave(); break;
+    case 'copyLink': {
+      const url = location.href.split('#')[0] + '#t=' + CLOUD.code;
+      const ok = () => toast('Link kopiert: ' + url);
+      const fb = () => modal('Link zum Turnier', `<p class="muted small">Zum Kopieren markieren:</p><input type="text" readonly id="lnk" value="${esc(url)}" onfocus="this.select()">`, [{label:'Schließen',cls:'primary',fn:closeModal}]);
+      try{ navigator.clipboard.writeText(url).then(ok, fb); }catch(e){ fb(); }
+      break; }
+    case 'openCode': { const v = (document.getElementById('codeIn').value||'').trim().toUpperCase(); if (!/^[A-Z0-9]{4,12}$/.test(v)){ toast('Bitte einen gültigen Turnier-Code eingeben.',true); break; } CLOUD.open && CLOUD.open(v); break; }
+    case 'openRecent': CLOUD.open && CLOUD.open(el.dataset.code); break;
+    case 'createT': {
+      const nm = document.getElementById('tName').value.trim(), p1 = document.getElementById('tPw').value, p2 = document.getElementById('tPw2').value;
+      if (!nm){ toast('Bitte dem Turnier einen Namen geben.',true); break; }
+      if (p1.length<8){ toast('Das Passwort braucht mindestens 8 Zeichen.',true); break; }
+      if (p1!==p2){ toast('Die beiden Passwörter sind nicht gleich.',true); break; }
+      CLOUD.create && CLOUD.create(nm,p1); break; }
+    case 'goLocal': CLOUD.mode = 'local'; CLOUD.role = 'local'; CLOUD.code = ''; S = load(); render(); break;
     case 'addPlayer': addPlayers(); break;
     case 'rmPlayer': S.players = S.players.filter(p=>p.id!==el.dataset.id); S.teams=null; S.groups=null; commit(); break;
     case 'setMode': S.mode = el.dataset.v; S.teams=null; S.groups=null; commit(); break;
@@ -1192,22 +1245,18 @@ document.addEventListener('keydown', e=>{
 window.IdyllApp = {
   get state(){ return S; },
   toast,
+  modal, closeModal, esc,
   setCloud(o){ Object.assign(CLOUD,o); render(); },
   setRole(r){ CLOUD.role = r; render(); },
-  setUser(u){ CLOUD.user = u; render(); },
   setStatus(s){ CLOUD.status = s; render(); },
+  hasPending(){ return pushTimer!==null; },
+  freshState(){ const s = defaultState(); s._rev = 0; return s; },
   // Stand aus der Cloud übernehmen (eigener Tab bleibt erhalten)
   applyRemote(o){
     const tab = S.tab;
     S = o ? Object.assign(defaultState(), o) : defaultState();
     S.tab = tab; UI.edit = {};
-    if (CLOUD.role==='host'){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
     render();
-  },
-  pushNow(){ if (CLOUD.push) CLOUD.push(S); },
-  pushIfAny(){ if ((S.started || S.players.length) && CLOUD.push){ S._rev = (S._rev||0)+1; CLOUD.push(S); } },
-  showUid(uid){
-    modal('Fast fertig – deine Nutzer-ID', `<p>Trag diese ID in <code>config.js</code> bei <code>OWNER_UID</code> und in den Firestore-Regeln ein (siehe README):</p><p><code style="word-break:break-all;user-select:all">${esc(uid)}</code></p>`, [{label:'Schließen',cls:'primary',fn:closeModal}]);
   }
 };
 
@@ -1220,59 +1269,155 @@ if (typeof document!=='undefined' && document.getElementById('app') && typeof wi
 if (typeof module!=='undefined') module.exports = {CLOUD, S:()=>S, setS:s=>{S=s;}, defaultState, rrPairs, scheduleSlots, endDefs, scheduleEnd, estimate, standings, structure, loadDemo, buildCtx, startTournament, drawTeams, drawGroups, canStart, uid, getUnits};
 </script>
 
-<!-- Cloud-Anbindung: Firebase (Login + Firestore). Ohne gültige config.js läuft die App rein lokal. -->
+<!-- Cloud-Anbindung: Firebase (anonyme Anmeldung + Firestore). Ohne gültige config.js läuft die App rein lokal.
+     Datenmodell:  tournaments/{code}                 öffentlich lesbar: Name + Spielstand
+                   tournaments/{code}/private/secret  Passwort-Hash, von niemandem lesbar (nur die Regeln prüfen ihn)
+                   tournaments/{code}/editors/{uid}   Geräte, die das Passwort eingegeben haben (dürfen schreiben)  -->
 <script type="module">
 (async () => {
   const App = window.IdyllApp; if (!App) return;
   let cfg;
   try { cfg = await import('./config.js'); } catch (e) { return; }           // z. B. Datei per Doppelklick geöffnet → lokal
-  const { firebaseConfig, OWNER_UID } = cfg;
+  const { firebaseConfig } = cfg;
   if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).startsWith('DEIN')) return;
+
+  const RECENT_KEY = 'idyll-dart-recent-v1';
+  const getRecents = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (e) { return []; } };
+  const addRecent = (code, name) => {
+    try {
+      const r = getRecents().filter(x => x.code !== code); r.unshift({ code, name });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(r.slice(0, 6)));
+    } catch (e) {}
+  };
+
+  let fb;
   try {
     const V = '10.12.2', B = 'https://www.gstatic.com/firebasejs/' + V + '/';
-    const [{ initializeApp }, { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut },
-           { getFirestore, doc, onSnapshot, setDoc }] =
-      await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]);
-    const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
-    const ref = doc(db, 'tournament', 'current');
-    const clientId = Math.random().toString(36).slice(2);
-    let role = 'guest', unsub = null;
+    const [A, Au, Fs] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]);
+    fb = { ...A, ...Au, ...Fs };
+  } catch (e) { console.error('Firebase konnte nicht geladen werden', e); return; }
 
-    App.setCloud({
-      mode: 'cloud', role: 'guest', status: 'connecting',
-      login: () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => App.toast('Anmeldung fehlgeschlagen (' + (e.code || e.message) + ')', true)),
-      logout: () => signOut(auth),
-      push: async (s) => {
-        try {
-          await setDoc(ref, { state: JSON.stringify(s), rev: s._rev || 0, by: clientId, updatedAt: Date.now() });
-          App.setStatus('ok');
-        } catch (e) { console.error(e); App.setStatus('error'); }
-      }
-    });
+  const app = fb.initializeApp(firebaseConfig), auth = fb.getAuth(app), db = fb.getFirestore(app);
+  const clientId = Math.random().toString(36).slice(2);
+  const tRef = (code) => fb.doc(db, 'tournaments', code);
+  const secretRef = (code) => fb.doc(db, 'tournaments', code, 'private', 'secret');
+  const edRef = (code, uid) => fb.doc(db, 'tournaments', code, 'editors', uid);
 
-    onAuthStateChanged(auth, (u) => {
-      role = (u && OWNER_UID && u.uid === OWNER_UID) ? 'host' : 'guest';
-      App.setUser(u);
-      if (u && !OWNER_UID) App.showUid(u.uid);
-      if (u && OWNER_UID && u.uid !== OWNER_UID) App.toast('Dieses Konto darf nichts ändern – du siehst die Live-Ansicht.', true);
-      App.setRole(role);
-      if (unsub) unsub();
-      unsub = onSnapshot(ref, (snap) => {
-        App.setStatus('ok');
-        if (!snap.exists()) {
-          if (role === 'host') App.pushIfAny(); else App.applyRemote(null);
-          return;
-        }
-        const d = snap.data();
-        if (role === 'host' && d.by === clientId) return;                       // eigene Änderung
-        if (role === 'host' && (App.state._rev || 0) > (d.rev || 0)) { App.pushNow(); return; }   // lokal ist neuer
-        try { App.applyRemote(JSON.parse(d.state)); } catch (e) { console.error(e); }
-      }, (err) => { console.error(err); App.setStatus('error'); });
-    });
-  } catch (e) {
-    console.error('Cloud nicht verfügbar', e);
-    App.setCloud({ mode: 'cloud', role: 'local', status: 'error' });
+  // Passwort → Hash. Das Passwort selbst verlässt den Browser nie.
+  async function hashPw(code, pw) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('idyll|' + code + '|' + pw));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   }
+  async function me() {
+    if (auth.currentUser) return auth.currentUser;
+    try { return (await fb.signInAnonymously(auth)).user; }
+    catch (e) {
+      App.toast(e.code === 'auth/operation-not-allowed'
+        ? 'In Firebase ist die anonyme Anmeldung noch nicht aktiviert (siehe README).' : 'Anmeldung fehlgeschlagen (' + (e.code || e.message) + ')', true);
+      throw e;
+    }
+  }
+  const newCode = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 6; i++) s += A[Math.floor(Math.random() * A.length)]; return s; };
+
+  let unsubT = null, unsubE = null, curCode = '', curName = '', pushing = Promise.resolve();
+
+  function stopListening() { if (unsubT) unsubT(); if (unsubE) unsubE(); unsubT = unsubE = null; }
+
+  function toLanding() {
+    stopListening(); curCode = '';
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    App.setCloud({ mode: 'cloud', view: 'landing', role: 'guest', code: '', name: '', recents: getRecents() });
+  }
+
+  async function openTournament(code) {
+    code = String(code || '').toUpperCase();
+    stopListening(); curCode = code; curName = '';
+    App.setCloud({ mode: 'cloud', view: 'tournament', role: 'guest', code, name: '', status: 'connecting' });
+    App.applyRemote(null);
+    let user;
+    try { user = await me(); } catch (e) { App.setStatus('error'); return; }
+    if (location.hash !== '#t=' + code) history.replaceState(null, '', location.pathname + location.search + '#t=' + code);
+    let first = true;
+    unsubT = fb.onSnapshot(tRef(code), (snap) => {
+      if (code !== curCode) return;
+      if (!snap.exists()) {
+        if (first) { App.toast('Turnier „' + code + '“ nicht gefunden.', true); toLanding(); }
+        return;
+      }
+      first = false;
+      const d = snap.data();
+      curName = d.name || ''; addRecent(code, curName);
+      App.setCloud({ name: curName, status: 'ok' });
+      if (d.by === clientId) return;                       // eigene Änderung
+      if (App.hasPending()) return;                        // eigene, noch nicht gesendete Änderung gewinnt
+      try { App.applyRemote(JSON.parse(d.state)); } catch (e) { console.error(e); }
+    }, (err) => { console.error(err); App.setStatus('error'); });
+    unsubE = fb.onSnapshot(edRef(code, user.uid), (snap) => {
+      if (code !== curCode) return;
+      App.setRole(snap.exists() ? 'host' : 'guest');
+    }, (err) => { console.error(err); });
+  }
+
+  async function createTournament(name, pw) {
+    try {
+      const user = await me();
+      const code = newCode(), hash = await hashPw(code, pw), state = App.freshState();
+      const batch = fb.writeBatch(db);
+      batch.set(secretRef(code), { hash, creator: user.uid, createdAt: Date.now() });
+      batch.set(tRef(code), { name, state: JSON.stringify(state), rev: 0, by: clientId, updatedAt: Date.now() });
+      batch.set(edRef(code, user.uid), { hash });
+      await batch.commit();
+      addRecent(code, name);
+      await openTournament(code);
+      App.toast('Turnier angelegt – Code ' + code);
+    } catch (e) {
+      console.error(e);
+      App.toast(e.code === 'permission-denied' ? 'Anlegen nicht erlaubt (Firestore-Regeln prüfen).' : 'Anlegen fehlgeschlagen (' + (e.code || e.message) + ')', true);
+    }
+  }
+
+  function askPassword() {
+    App.modal('Bearbeiten freischalten',
+      '<p class="muted small">Passwort dieses Turniers eingeben. Danach darf dieses Gerät Ergebnisse eintragen.</p><input type="password" id="edPw" autocomplete="current-password" placeholder="Passwort">',
+      [{ label: 'Abbrechen', cls: 'ghost', fn: App.closeModal },
+       { label: 'Freischalten', cls: 'primary', fn: async () => {
+          const pw = document.getElementById('edPw').value;
+          if (!pw) return;
+          try {
+            const user = await me();
+            await fb.setDoc(edRef(curCode, user.uid), { hash: await hashPw(curCode, pw) });
+            App.closeModal(); App.toast('Freigeschaltet – du kannst jetzt bearbeiten.');
+          } catch (e) {
+            App.toast(e.code === 'permission-denied' ? 'Falsches Passwort.' : 'Fehler (' + (e.code || e.message) + ')', true);
+          }
+       } }]);
+    setTimeout(() => { const i = document.getElementById('edPw'); if (i) { i.focus(); i.addEventListener('keydown', ev => { if (ev.key === 'Enter') document.querySelector('[data-mbtn="1"]').click(); }); } }, 50);
+  }
+
+  async function stopEdit() {
+    try { const user = await me(); await fb.deleteDoc(edRef(curCode, user.uid)); App.toast('Bearbeiten beendet – Live-Ansicht.'); }
+    catch (e) { App.toast('Fehler (' + (e.code || e.message) + ')', true); }
+  }
+
+  App.setCloud({
+    mode: 'cloud', available: true, recents: getRecents(),
+    open: openTournament, create: createTournament, startEdit: askPassword, stopEdit, leave: toLanding,
+    push: (s) => {
+      const code = curCode;
+      pushing = pushing.then(async () => {
+        try {
+          await fb.setDoc(tRef(code), { name: curName, state: JSON.stringify(s), rev: s._rev || 0, by: clientId, updatedAt: Date.now() });
+          App.setStatus('ok');
+        } catch (e) { console.error(e); App.setStatus('error'); App.toast('Speichern in der Cloud fehlgeschlagen – Verbindung prüfen.', true); }
+      });
+      return pushing;
+    }
+  });
+
+  const fromHash = () => { const m = location.hash.match(/t=([A-Za-z0-9]{4,12})/); return m ? m[1].toUpperCase() : null; };
+  window.addEventListener('hashchange', () => { const c = fromHash(); if (c && c !== curCode) openTournament(c); else if (!c && curCode) toLanding(); });
+  const start = fromHash();
+  if (start) openTournament(start); else toLanding();
 })();
 </script>
 </body>

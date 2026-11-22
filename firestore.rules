@@ -1,11 +1,44 @@
 rules_version = '2';
 
-// Jeder darf das laufende Turnier lesen (Live-Ansicht für Gäste), nur du darfst schreiben.
+// Jedes Turnier hat ein Passwort (als Hash in private/secret, von niemandem lesbar).
+// - Lesen (Live-Ansicht): jeder, ohne Anmeldung.
+// - Schreiben: nur Geräte, die das Passwort eingegeben haben (Dokument unter editors/{uid}).
+// Die Regeln können kein Passwort hashen; der Browser schickt deshalb den fertigen Hash,
+// und die Regeln vergleichen ihn mit dem gespeicherten Hash.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /tournament/{id} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == "DEINE_UID";
+    match /tournaments/{tid} {
+      // Einzelnes Turnier lesen darf jeder; eine Liste aller Turniere gibt es nicht
+      allow get: if true;
+      allow list: if false;
+
+      // Anlegen nur zusammen mit einem Passwort-Dokument (im selben Schreibvorgang)
+      allow create: if request.auth != null
+        && existsAfter(/databases/$(database)/documents/tournaments/$(tid)/private/secret);
+
+      // Ändern nur für freigeschaltete Geräte
+      allow update: if request.auth != null
+        && exists(/databases/$(database)/documents/tournaments/$(tid)/editors/$(request.auth.uid));
+
+      allow delete: if false;
+
+      // Passwort-Hash: nie lesbar, nur einmalig beim Anlegen schreibbar
+      match /private/secret {
+        allow read: if false;
+        allow create: if request.auth != null
+          && !exists(/databases/$(database)/documents/tournaments/$(tid))
+          && request.resource.data.hash is string
+          && request.resource.data.hash.size() == 64;
+        allow update, delete: if false;
+      }
+
+      // Freigeschaltete Geräte: nur mit passendem Hash eintragbar, nur vom Gerät selbst lesbar
+      match /editors/{uid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && getAfter(/databases/$(database)/documents/tournaments/$(tid)/private/secret).data.hash == request.resource.data.hash;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
     }
   }
 }
