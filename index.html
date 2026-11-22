@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Idyll Dart-Manager</title>
+<style>
+:root{
+  --bg:#0c0f14;--bg2:#131820;--panel:#1a212c;--panel2:#222b39;--line:#2e3a4d;
+  --text:#eef2f8;--mute:#9aa7bb;--red:#ef4057;--red2:#c92a41;--green:#35d07f;--amber:#ffb703;--blue:#4cc2ff;--gold:#f7c948;
+  --r:14px;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#10151d,#0c0f14);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.logo{font-size:1.35rem;font-weight:800;letter-spacing:.3px}
+.logo span{color:var(--red)}
+.logo .idyll{color:#3ee08a;font-family:"Brush Script MT","Segoe Script","Snell Roundhand",cursive;font-size:1.9rem;font-weight:700;text-shadow:0 0 10px rgba(62,224,138,.55);letter-spacing:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.85rem;color:var(--mute)}
+.chip b{color:var(--text)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+nav.tabs{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;background:var(--bg);position:sticky;top:57px;z-index:15}
+nav.tabs button{background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:12px 12px 0 0;padding:12px 18px;min-height:48px;cursor:pointer;color:var(--mute);font-weight:600;white-space:nowrap}
+nav.tabs button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 3px 0 var(--red)}
+nav.tabs button .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.card h2,.card h3{margin:0 0 10px}
+h2{font-size:1.2rem}h3{font-size:1.05rem}
+.muted{color:var(--mute)}
+.small{font-size:.85rem}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+.cols>.card{margin-bottom:0}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.lang{display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:16px;align-items:start}
+@media(max-width:1000px){.cols2,.lang{grid-template-columns:1fr}}
+.btn{min-height:48px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{border-color:#4a5d7b}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:var(--red2)}
+.btn.good{background:var(--green);border-color:var(--green);color:#04210f}
+.btn.danger{background:transparent;border-color:var(--red);color:var(--red)}
+.btn.sm{min-height:36px;padding:4px 12px;font-size:.9rem}
+.btn.ghost{background:transparent}
+input[type=text],input[type=number],select,textarea{background:#0f141b;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px;width:100%}
+input:focus,select:focus{outline:2px solid var(--blue);outline-offset:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>input{flex:1;min-width:160px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border:2px solid var(--line);background:var(--bg2);border-radius:var(--r);padding:12px;cursor:pointer;text-align:left;position:relative}
+.tile.on{border-color:var(--red);background:#2a1a22}
+.tile h4{margin:0 0 4px;font-size:1.05rem}
+.tile .est{margin-top:8px;font-size:.9rem}
+.tile .rec{position:absolute;top:-10px;right:10px;background:var(--gold);color:#241a00;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px}
+.tile:disabled{opacity:.45;cursor:not-allowed}
+.plist{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.plist li{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.plist .sn{color:var(--mute);width:1.6em;text-align:right;font-variant-numeric:tabular-nums}
+.plist .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{background:none;border:none;color:var(--mute);cursor:pointer;font-size:1.1rem;padding:6px 10px;border-radius:8px}
+.x:hover{color:var(--red);background:#2a1a22}
+.bar{height:12px;background:#0f141b;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--green)}
+.bar.over i{background:var(--red)}.bar.warn i{background:var(--amber)}
+.msg{border-radius:12px;padding:10px 14px;margin:10px 0;border:1px solid}
+.msg.warn{background:#2f2508;border-color:#7a5d10;color:#ffe08a}
+.msg.bad{background:#32121a;border-color:#8a2438;color:#ffb3c0}
+.msg.ok{background:#0f2a1c;border-color:#1f6b43;color:#a6f0c7}
+.msg.info{background:#10263a;border-color:#245a85;color:#bde3ff}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.badge.open{background:#2b3547;color:#b8c4d8}
+.badge.run{background:var(--amber);color:#2a1d00;animation:pulse 1.6s infinite}
+.badge.done{background:var(--green);color:#052514}
+.badge.wait{background:transparent;border:1px dashed var(--line);color:var(--mute)}
+@keyframes pulse{50%{opacity:.55}}
+.game{background:var(--bg2);border:1px solid var(--line);border-left:6px solid #3a4960;border-radius:12px;padding:12px;margin-bottom:10px}
+.game.run{border-left-color:var(--amber)}.game.done{border-left-color:var(--green)}
+.game.next{box-shadow:0 0 0 2px var(--blue)}
+.g-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.g-head .slot{font-weight:800}
+.g-head .rule{color:var(--mute);font-size:.8rem;margin-left:auto}
+.g-lab{color:var(--gold);font-size:.85rem;font-weight:700;margin-bottom:6px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--panel);padding:8px 10px;font-weight:700;font-size:1.05rem;text-align:center;display:flex;align-items:center;justify-content:center;flex-direction:column;word-break:break-word}
+button.side{cursor:pointer}
+button.side:hover{border-color:#5b6f92}
+.side.sel,.side.win{border-color:var(--green);background:#0f2a1c}
+.side.lose{opacity:.75}
+.side.ph{border-style:dashed;color:var(--mute);font-weight:500}
+.side small{font-weight:400;color:var(--mute)}
+.entry{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.entry label{font-size:.85rem;color:var(--mute)}
+.entry input{width:110px;font-size:1.2rem;text-align:center}
+.entry .grow{flex:1}
+.slotrow{display:grid;grid-template-columns:44px 1fr 1fr;gap:10px;align-items:start}
+.slotrow .no{background:var(--panel2);border-radius:10px;text-align:center;padding:8px 0;font-weight:800;color:var(--mute)}
+.slothead{display:grid;grid-template-columns:44px 1fr 1fr;gap:10px;margin-bottom:8px;font-weight:800;position:sticky;top:112px;z-index:5;background:var(--panel);padding:6px 0}
+@media(max-width:700px){.slotrow,.slothead{grid-template-columns:1fr}.slotrow .no{text-align:left;padding:4px 10px}.slothead{display:none}}
+table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
+table.t th{color:var(--mute);font-size:.78rem;text-transform:uppercase;letter-spacing:.4px}
+table.t td.l,table.t th.l{text-align:left}
+table.t tr.top td:first-child{box-shadow:inset 4px 0 0 var(--gold)}
+table.t td.nm{font-weight:700}
+table.t input{width:64px;min-height:36px;padding:2px 6px;text-align:center}
+.pill{font-size:.7rem;background:#27405a;color:#bde3ff;border-radius:99px;padding:1px 7px;margin-left:4px;font-weight:700}
+.pill.r{background:#5a2433;color:#ffc2cf}
+.podium{display:flex;gap:12px;align-items:flex-end;justify-content:center;margin:10px 0 6px;flex-wrap:wrap}
+.pod{width:min(30%,220px);min-width:130px;text-align:center;border-radius:14px 14px 0 0;padding:14px 8px;border:1px solid var(--line);background:var(--panel2)}
+.pod .m{font-size:2.2rem}
+.pod .n{font-size:1.15rem;font-weight:800;word-break:break-word}
+.pod.p1{height:210px;background:linear-gradient(180deg,#4a3a0c,#2a2210);border-color:#a8861f}
+.pod.p2{height:170px}.pod.p3{height:140px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat .k{color:var(--mute);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.stat .v{font-size:1.15rem;font-weight:800;margin:4px 0}
+.progress{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.progress .bar{flex:1}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+#modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;max-width:520px;width:100%}
+.mbox h3{margin-top:0}
+.mbtn{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0b1118;border:1px solid var(--line);padding:12px 20px;border-radius:12px;display:none;z-index:200;max-width:90vw}
+#toast.on{display:block}
+#toast.bad{border-color:var(--red);color:#ffb3c0}
+details summary{cursor:pointer;color:var(--mute);margin:8px 0}
+.game{padding:8px 10px;margin-bottom:8px}
+.game.done{background:#101a15}
+.gtop{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.85rem}
+.gtop .g-lab{margin:0;font-size:.8rem}
+.gact{margin-left:auto;display:flex;gap:6px}
+.mini{min-width:40px;min-height:36px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:1rem}
+.mini:hover{border-color:#5b6f92}
+.gmain{display:grid;grid-template-columns:1fr 1fr 78px;gap:6px;margin-top:6px}
+.gmain .side{min-height:50px;font-size:1rem;padding:4px 6px}
+.gmain .side small{font-size:.7rem}
+.gmain input.ls{min-height:50px;text-align:center;font-size:1.2rem;padding:2px}
+.gmain input.ls.need{outline:2px solid var(--amber)}
+.hint{color:var(--amber);font-size:.82rem;margin-top:4px}
+.grule{color:var(--mute);font-size:.72rem;margin-top:4px;text-align:right}
+/* Live-Ansicht für Gäste: nur lesen */
+body.viewonly .host-only,body.viewonly .gact,body.viewonly .hint{display:none!important}
+body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-events:none}
+.sec{margin-bottom:28px}
+.sec.cross{border-top:4px solid var(--blue)}
+.sec.cross .g-lab{color:var(--blue)}
+.sec.place{border-top:4px solid var(--gold)}
+.ruleBox{margin-bottom:12px}
+.ruleBox>label{font-weight:700;display:block;margin-bottom:4px}
+.ruleRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ruleRow select,.ruleRow input{min-width:0}
+.gl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gl .col{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px}
+.gl h4{margin:0 0 8px}
+.unit{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}
+.unit:last-child{border:none}.unit .nm{flex:1}
+@media print{
+  body{background:#fff;color:#000}header.top,nav.tabs,.tools,.btn{display:none!important}
+  .card,.stat,.pod{background:#fff;color:#000;border-color:#999}.muted{color:#444}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">🎯 <span class="idyll">Idyll</span> <span>Dart-Manager</span></div>
+  <div class="chips" id="chips"></div>
+  <div class="tools">
+    <button class="btn sm" data-act="authToggle" id="authBtn" hidden>🔐 Anmelden</button>
+    <button class="btn sm host-only" data-act="export" title="Backup anzeigen / kopieren">⬇ Backup</button>
+    <button class="btn sm host-only" data-act="import" title="Backup einspielen">⬆ Import</button>
+    <button class="btn sm danger host-only" data-act="reset">Turnier zurücksetzen</button>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+  </div>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<main id="app"></main>
+<div id="modal"><div class="mbox" id="mbox"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Idyll Dart-Manager – Logik
+   ========================================================= */
+const LS_KEY = 'idyll-dart-manager-v1';
+const MAX_PLAYERS = 20, MIN_PLAYERS = 6;
+
+const RANGE = n => Array.from({length:n}, (_, i) => i);
+const C2 = n => n*(n-1)/2;
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const fmtMin = m => { m=Math.round(m); return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+' Std.'; };
+const pad2 = n => String(n).padStart(2,'0');
+const clock = d => pad2(d.getHours())+':'+pad2(d.getMinutes());
+
+function defaultState(){
+  return {
+    v:1, nid:1,
+    players:[], mode:'single', format:'kurz',
+    hours:5, pauseMin:20, lastPlace:'freilos',
+    times:{m301:10, m501:14, change:0},
+    rules:{
+      vor:   {pts:301, rounds:15, in:'Straight In', out:'Master Out'},
+      platz: {pts:301, rounds:15, in:'Straight In', out:'Master Out'},
+      finale:{pts:501, rounds:15, in:'Straight In', out:'Master Out'}
+    },
+    startRule:'random',   // Anwurf in der Endrunde: random | seed | bull
+    start:{},             // ausgeloster Anwurf je Endrunden-Spiel
+    teams:null, groups:null,
+    started:false, startedAt:null,
+    vor:[], end:{}, bull:{},
+    tab:'setup'
+  };
+}
+
+/* ---------- Zeit ---------- */
+function gameMin(rule, t){
+  const {m301,m501} = t;
+  if (rule.pts===301) return m301;
+  if (rule.pts===501) return m501;
+  return Math.max(4, m301 + (rule.pts-301)*(m501-m301)/200);
+}
+const slotMin = (rule,t) => gameMin(rule,t) + (+t.change||0);
+
+/* ---------- Spielplan-Erzeugung ---------- */
+// Kreismethode: Liste von Runden mit Paarungen
+function rrPairs(ids){
+  const a = ids.slice(); if (a.length%2) a.push(null);
+  const n = a.length, out = [];
+  for (let r=0;r<n-1;r++){
+    for (let i=0;i<n/2;i++){
+      const x=a[i], y=a[n-1-i];
+      if (x!=null && y!=null) out.push(r%2 ? [y,x] : [x,y]);
+    }
+    a.splice(1,0,a.pop());
+  }
+  return out;
+}
+// Verteilt Paarungen auf Zeitslots (machines parallel): möglichst keine Doppelspiele hintereinander,
+// gleichmäßige Fortschritte aller Spieler
+function scheduleSlots(pairs, machines){
+  const rem = pairs.map((p,i)=>({p,i}));
+  const last = {}, played = {};
+  const slots = [];
+  let t = 0;
+  while (rem.length){
+    const chosen = [], used = new Set();
+    for (let m=0;m<machines;m++){
+      let best=-1, bs=-Infinity;
+      rem.forEach((g,idx)=>{
+        if (chosen.includes(g) || used.has(g.p[0]) || used.has(g.p[1])) return;
+        const r0 = Math.min(4, t-(last[g.p[0]] ?? -99)), r1 = Math.min(4, t-(last[g.p[1]] ?? -99));
+        const pc = (played[g.p[0]]||0)+(played[g.p[1]]||0);
+        const s = Math.min(r0,r1)*100 + (r0+r1)*2 - pc*0.5 - g.i*0.01;
+        if (s>bs){bs=s;best=idx;}
+      });
+      if (best<0) break;
+      const g = rem[best]; chosen.push(g); used.add(g.p[0]); used.add(g.p[1]);
+    }
+    chosen.forEach(g=>{
+      last[g.p[0]]=t; last[g.p[1]]=t;
+      played[g.p[0]]=(played[g.p[0]]||0)+1; played[g.p[1]]=(played[g.p[1]]||0)+1;
+      rem.splice(rem.indexOf(g),1);
+    });
+    slots.push(chosen.map(g=>g.p));
+    t++;
+  }
+  return slots;
+}
+
+/* ---------- Endrunde: Struktur (unabhängig von konkreten Spielern) ---------- */
+function structure(format, n){
+  return format==='kurz' ? {format, n, gA:Math.ceil(n/2), gB:Math.floor(n/2)} : {format, n};
+}
+const seed = (g,r)=>({t:'seed',g,r});
+const WIN  = k=>({t:'W',k});
+const LOS  = k=>({t:'L',k});
+
+function endDefs(st, lastPlace){
+  const defs = [];
+  const add = d => { defs.push(d); return d; };
+  let lowestKey = null, byeSeed = null, byePlace = null, sizeG;
+  if (st.format==='kurz'){
+    const g = st.gB;
+    for (let k=1;k<=Math.floor(g/2);k++){
+      const r1=2*k-1, r2=2*k, lo=4*k-3;
+      add({key:`K${k}a`, stage:1, pri:k, a:seed('A',r1), b:seed('B',r2),
+           label:(k===1?'Halbfinale 1':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r1}A vs ${r2}B)`, cross:true});
+      add({key:`K${k}b`, stage:1, pri:k, a:seed('A',r2), b:seed('B',r1),
+           label:(k===1?'Halbfinale 2':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r2}A vs ${r1}B)`, cross:true});
+      add({key:`P${lo}`,   stage:2, pri:500-lo,   a:WIN(`K${k}a`), b:WIN(`K${k}b`), pw:lo,   pl:lo+1});
+      add({key:`P${lo+2}`, stage:2, pri:500-lo-2, a:LOS(`K${k}a`), b:LOS(`K${k}b`), pw:lo+2, pl:lo+3});
+      lowestKey = `P${lo+2}`;
+    }
+    if (g%2){
+      add({key:'D', stage:1, pri:100, a:seed('A',g), b:seed('B',g), pw:2*g-1, pl:2*g, label:`Direktes Duell (${g}A vs ${g}B)`});
+      lowestKey = 'D';
+    }
+    if (st.gA>st.gB){ byeSeed = seed('A',st.gA); byePlace = st.gA+st.gB; }
+    sizeG = st.gA+st.gB;
+  } else {
+    const n = st.n;
+    for (let k=1;k<=Math.floor(n/2);k++){
+      add({key:`P${2*k-1}`, stage:1, pri:500-(2*k-1), a:seed('X',2*k-1), b:seed('X',2*k), pw:2*k-1, pl:2*k});
+      lowestKey = `P${2*k-1}`;
+    }
+    if (n%2){ byeSeed = seed('X',n); byePlace = n; }
+    sizeG = n;
+  }
+  if (byeSeed && lastPlace==='playoff' && lowestKey && lowestKey!=='P1'){
+    const low = defs.find(d=>d.key===lowestKey);
+    const lo = low.pw;
+    low.pl = null;           // Verlierer spielt noch das Mini-Playoff
+    add({key:'LP', stage:2, pri:450, a:LOS(lowestKey), b:byeSeed, pw:sizeG-1, pl:sizeG, label:'Mini-Playoff um den letzten Platz'});
+    byeSeed = null; byePlace = null;
+  }
+  defs.forEach(d=>{
+    if (d.pw===1 && d.pl===2){ d.rule='finale'; d.tail=true; d.label='Finale · Platz 1–2'; }
+    else {
+      d.rule='platz';
+      if (d.pw===3 && d.pl===4){ d.tail=true; d.label = 'Spiel um Platz 3'; }
+      else if (!d.label) d.label = `Spiel um Platz ${d.pw}–${d.pl}`;
+      else if (d.key==='LP') {}
+    }
+  });
+  defs.bye = byeSeed ? {seed:byeSeed, place:byePlace} : null;
+  return defs;
+}
+
+// Ordnet Endrunden-Spiele (mit Abhängigkeiten) Zeitslots/Automaten zu
+function scheduleEnd(defs){
+  const byKey = Object.fromEntries(defs.map(d=>[d.key,d]));
+  const poss = ref => ref.t==='seed' ? [ref.g+ref.r] : [...poss(byKey[ref.k].a), ...poss(byKey[ref.k].b)];
+  defs.forEach(d=>{
+    d.pl_ = poss(d.a).concat(poss(d.b));
+    d.feed = [d.a,d.b].filter(r=>r.t!=='seed').map(r=>r.k);
+  });
+  let left = defs.slice(), t = 0, prev = new Set();
+  const done = {};
+  while (left.length){
+    t++;
+    const ready = left.filter(d=>d.feed.every(k=>done[k]!==undefined && done[k]<t)).sort((x,y)=>x.pri-y.pri);
+    let pool = ready.filter(d=>!d.tail);
+    if (left.some(d=>!d.tail) && pool.length===0) pool = ready;
+    if (!left.some(d=>!d.tail)) pool = ready;
+    const pick = [];
+    for (const d of pool){ if (pick.length>=2) break; if (!d.pl_.some(x=>prev.has(x))) pick.push(d); }
+    for (const d of pool){ if (pick.length>=2) break; if (!pick.includes(d)) pick.push(d); }
+    if (!pick.length){ throw new Error('Endrunden-Planung blockiert'); }
+    pick.sort((x,y)=> (y.rule==='finale') - (x.rule==='finale'));
+    pick.forEach((d,i)=>{ d.slot=t; d.machine=i+1; done[d.key]=t; });
+    prev = new Set(pick.flatMap(d=>d.pl_));
+    left = left.filter(d=>!pick.includes(d));
+  }
+  return defs;
+}
+
+/* ---------- Zeitprognose ---------- */
+function estimate(format, n, rules, times, pauseMin, lastPlace){
+  if (n<3 || (format==='kurz' && n<4)) return null;
+  const st = structure(format,n);
+  const vorSlots = format==='kurz' ? Math.max(C2(st.gA),C2(st.gB))
+                                   : scheduleSlots(rrPairs(RANGE(n)),2).length;
+  const vorMin = vorSlots*slotMin(rules.vor,times);
+  const defs = scheduleEnd(endDefs(st,lastPlace));
+  const slotDur = {};
+  defs.forEach(d=>{ slotDur[d.slot]=Math.max(slotDur[d.slot]||0, slotMin(rules[d.rule],times)); });
+  const endMin = Object.values(slotDur).reduce((a,b)=>a+b,0);
+  const endSlots = Object.keys(slotDur).length;
+  return {vorSlots, vorMin, endSlots, endMin, pauseMin:+pauseMin||0, total:vorMin+endMin+(+pauseMin||0),
+          games: (format==='kurz'? C2(st.gA)+C2(st.gB) : C2(n)) + defs.length};
+}
+
+/* ---------- Tabelle ---------- */
+function standings(ids, games, U, bull){
+  const row = {};
+  ids.forEach(id=>{ row[id]={id,name:U[id].name,sn:U[id].sn,sp:0,w:0,l:0,pts:0,ls:0,beat:{},bull:+bull[id]||0}; });
+  games.forEach(g=>{
+    if (!g.winner) return;
+    const w=g.winner===1?g.a:g.b, l=g.winner===1?g.b:g.a;
+    row[w].sp++; row[l].sp++; row[w].w++; row[l].l++; row[w].pts+=2; row[l].ls+=(+g.ls||0); row[w].beat[l]=1;
+  });
+  const arr = Object.values(row);
+  arr.forEach(r=>{
+    const tied = arr.filter(o=>o!==r && o.pts===r.pts && o.ls===r.ls);
+    r.h = (tied.length===1 && r.beat[tied[0].id]) ? 1 : 0;          // direkter Vergleich nur bei exakt 2
+    r.dv = tied.length===1;
+  });
+  arr.sort((x,y)=> y.pts-x.pts || x.ls-y.ls || y.h-x.h || (x.bull||999)-(y.bull||999) || x.sn-y.sn);
+  arr.forEach((r,i)=>{ r.rank=i+1; });
+  arr.forEach(r=>{ r.tie = arr.some(o=>o!==r && o.pts===r.pts && o.ls===r.ls && o.h===r.h && (o.bull||999)===(r.bull||999)); });
+  return arr;
+}
+
+/* ---------- Zustand ---------- */
+let S = defaultState();
+const UI = {edit:{}, focus:null};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw){ const o = JSON.parse(raw); if (o && o.v===1) return Object.assign(defaultState(), o); }
+  }catch(e){}
+  return defaultState();
+}
+/* ---------- Cloud (Firebase) – wird von config.js + Modul-Skript unten aktiviert ---------- */
+// role: 'local' (ohne Cloud) | 'host' (angemeldeter Besitzer, darf schreiben) | 'guest' (Live-Ansicht, nur lesen)
+const CLOUD = {mode:'local', role:'local', status:'', push:null, login:null, logout:null, user:null};
+const isViewOnly = () => CLOUD.role==='guest';
+let pushTimer = null;
+function save(){
+  if (isViewOnly()) return;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){}
+  if (CLOUD.role==='host' && CLOUD.push){
+    S._rev = (S._rev||0)+1;
+    clearTimeout(pushTimer); pushTimer = setTimeout(()=>CLOUD.push(S), 400);
+  }
+}
+function commit(){ save(); render(); }
+const uid = () => 'i'+(S.nid++);
+
+function getUnits(){
+  if (S.mode==='double') return (S.teams||[]).map((t,i)=>({id:t.id,name:t.name,sn:i+1}));
+  return S.players.map((p,i)=>({id:p.id,name:p.name,sn:i+1}));
+}
+function planUnitCount(){ return S.mode==='double' ? Math.floor(S.players.length/2) : S.players.length; }
+
+function drawTeams(){
+  const ps = shuffle(S.players), teams = [];
+  for (let i=0;i<Math.floor(ps.length/2);i++) teams.push({id:uid(), members:[ps[2*i].id,ps[2*i+1].id]});
+  if (ps.length%2 && teams.length) teams[Math.floor(Math.random()*teams.length)].members.push(ps[ps.length-1].id);
+  const nm = Object.fromEntries(S.players.map(p=>[p.id,p.name]));
+  teams.forEach(t=>{ t.name = t.members.map(m=>nm[m]).join(' & '); t.three = t.members.length===3; });
+  S.teams = teams; S.groups = null;
+}
+function drawGroups(){
+  const ids = shuffle(getUnits().map(u=>u.id)), a = Math.ceil(ids.length/2);
+  S.groups = {A:ids.slice(0,a), B:ids.slice(a)};
+}
+
+function canStart(){
+  const msgs = [];
+  const p = S.players.length;
+  if (p<MIN_PLAYERS) msgs.push(`Mindestens ${MIN_PLAYERS} Spieler nötig (aktuell ${p}).`);
+  if (p>MAX_PLAYERS) msgs.push(`Maximal ${MAX_PLAYERS} Spieler.`);
+  if (S.mode==='double' && !S.teams) msgs.push('Teams sind noch nicht ausgelost.');
+  const n = planUnitCount();
+  if (S.format==='kurz'){
+    if (n<4) msgs.push('„Kurz“ braucht mindestens 4 Spieler/Teams – bitte „Lang“ wählen.');
+    else if (!S.groups) msgs.push('Gruppen sind noch nicht ausgelost.');
+    else if (S.groups.A.length<2 || S.groups.B.length<2 || Math.abs(S.groups.A.length-S.groups.B.length)>1)
+      msgs.push('Gruppen müssen ähnlich groß sein (Unterschied max. 1).');
+  }
+  return {ok:msgs.length===0, msgs};
+}
+
+// Verteilt den Anwurf gleichmäßig: Euler-Kreis im vollständigen Graphen, Kanten werden
+// in Laufrichtung orientiert -> jeder Spieler wirft (fast) genau gleich oft an (max. Abweichung 1).
+function anwurfMap(ids){
+  const v = shuffle(ids);
+  if (v.length%2===0) v.push('__dummy__');
+  const adj = {};
+  v.forEach(x=>{ adj[x] = new Set(v.filter(y=>y!==x)); });
+  const stack = [v[0]], circuit = [];
+  while (stack.length){
+    const u = stack[stack.length-1];
+    if (adj[u].size){ const w = adj[u].values().next().value; adj[u].delete(w); adj[w].delete(u); stack.push(w); }
+    else circuit.push(stack.pop());
+  }
+  const map = {};
+  for (let i=0;i<circuit.length-1;i++){
+    const x=circuit[i], y=circuit[i+1];
+    if (x==='__dummy__'||y==='__dummy__') continue;
+    map[x+'|'+y] = x; map[y+'|'+x] = x;
+  }
+  return map;
+}
+
+function startTournament(){
+  const U = getUnits(), vor = [];
+  let gid = 1;
+  const mk = (map,g,m,t,p) => {
+    const st = map[p[0]+'|'+p[1]], other = st===p[0]?p[1]:p[0];
+    vor.push({id:'v'+(gid++),group:g,machine:m,slot:t+1,a:st,b:other,winner:null,ls:null,running:false});
+  };
+  if (S.format==='kurz'){
+    let {A,B} = S.groups;
+    if (B.length>A.length) [A,B]=[B,A];
+    S.groups = {A:A.slice(),B:B.slice()};
+    [['A',A,1],['B',B,2]].forEach(([g,ids,m])=>{
+      const map = anwurfMap(ids);
+      scheduleSlots(rrPairs(ids),1).forEach((slot,t)=>slot.forEach(p=>mk(map,g,m,t,p)));
+    });
+  } else {
+    const ids = U.map(u=>u.id), map = anwurfMap(ids);
+    scheduleSlots(rrPairs(ids),2).forEach((slot,t)=>slot.forEach((p,i)=>mk(map,'X',i+1,t,p)));
+  }
+  S.vor = vor; S.end = {}; S.start = {}; S.bull = {}; S.started = true; S.startedAt = Date.now(); S.tab = 'vor';
+}
+
+/* ---------- Kontext (abgeleitete Daten) ---------- */
+function buildCtx(){
+  const units = getUnits(), U = Object.fromEntries(units.map(u=>[u.id,u]));
+  const ctx = {units, U, started:S.started};
+  if (!S.started) return ctx;
+  const groups = S.format==='kurz' ? {A:S.groups.A, B:S.groups.B} : {X:units.map(u=>u.id)};
+  ctx.groups = groups; ctx.stand = {}; ctx.complete = {};
+  Object.keys(groups).forEach(g=>{
+    const gg = S.vor.filter(x=>x.group===g);
+    ctx.stand[g] = standings(groups[g], gg, U, S.bull);
+    ctx.complete[g] = gg.length>0 && gg.every(x=>x.winner);
+  });
+  ctx.vrank = {};
+  Object.keys(ctx.stand).forEach(g=>ctx.stand[g].forEach(r=>{ ctx.vrank[r.id] = r.rank + (g==='B'?0.5:0); }));
+  ctx.vorDone = S.vor.every(x=>x.winner);
+  ctx.vorCount = S.vor.length; ctx.vorFin = S.vor.filter(x=>x.winner).length;
+  ctx.end = []; ctx.places = {}; ctx.bye = null;
+  if (ctx.vorDone){
+    const st = S.format==='kurz' ? structure('kurz', units.length) : structure('lang', units.length);
+    if (S.format==='kurz'){ st.gA=groups.A.length; st.gB=groups.B.length; }
+    const defs = scheduleEnd(endDefs(st, S.lastPlace));
+    const out = {};
+    const unitOf = ref=>{
+      if (ref.t==='seed'){ const r=ctx.stand[ref.g][ref.r-1]; return r?r.id:null; }
+      const f = out[ref.k]; if (!f || !f.res || !f.res.winner) return null;
+      const w = f.res.winner===1?f.a:f.b, l = f.res.winner===1?f.b:f.a;
+      return ref.t==='W'?w:l;
+    };
+    defs.forEach(d=>{
+      const a = unitOf(d.a), b = unitOf(d.b);
+      let res = S.end[d.key] || null, stale = false;
+      if (res && res.winner && (res.a!==a || res.b!==b)){ stale = true; res = null; }
+      else if (res && !res.winner && (res.a!==a || res.b!==b)) res = null;
+      out[d.key] = {def:d, key:d.key, a, b, res, stale, slot:d.slot, machine:d.machine};
+    });
+    ctx.end = defs.map(d=>out[d.key]);
+    ctx.endDone = ctx.end.every(g=>g.res&&g.res.winner);
+    ctx.end.forEach(g=>{
+      if (g.res && g.res.winner){
+        const w = g.res.winner===1?g.a:g.b, l = g.res.winner===1?g.b:g.a;
+        if (g.def.pw) ctx.places[g.def.pw]=w;
+        if (g.def.pl) ctx.places[g.def.pl]=l;
+      }
+    });
+    if (defs.bye){
+      const r = ctx.stand[defs.bye.seed.g][defs.bye.seed.r-1];
+      if (r){ ctx.places[defs.bye.place]=r.id; ctx.bye = {unit:r.id, place:defs.bye.place}; }
+    }
+  }
+  ctx.allDone = ctx.vorDone && ctx.endDone;
+  return ctx;
+}
+
+/* ---------- Ergebnis speichern ---------- */
+// Automatisches Speichern: sobald Sieger UND gültiger Rest vorhanden sind.
+function commitGame(key){
+  const ctx = buildCtx();
+  const g = findGame(ctx,key); if (!g || !g.a || !g.b) return false;
+  const ed = UI.edit[key] || {};
+  const cur = g.kind==='v' ? S.vor.find(x=>x.id===key) : S.end[key];
+  const w = ed.w !== undefined ? ed.w : (cur && cur.winner);
+  const raw = ed.ls !== undefined ? ed.ls : (cur && cur.ls);
+  if (!w || raw===''||raw==null) return false;
+  const ls = parseInt(raw,10);
+  if (!Number.isFinite(ls) || ls<0 || ls>g.rule.pts){ toast(`Rest muss zwischen 0 und ${g.rule.pts} liegen.`,true); return false; }
+  if (g.kind==='v'){ const v = S.vor.find(x=>x.id===key); v.winner=w; v.ls=ls; v.running=false; }
+  else S.end[key] = {winner:w, ls, a:g.a, b:g.b, running:false};
+  delete UI.edit[key];
+  commit();
+  return true;
+}
+let lsTimer = null;
+function findGame(ctx,key){
+  const v = S.vor.find(x=>x.id===key);
+  if (v) return {kind:'v', key, a:v.a, b:v.b, rule:S.rules.vor};
+  const e = (ctx.end||[]).find(x=>x.key===key);
+  if (e) return {kind:'e', key, a:e.a, b:e.b, rule:S.rules[e.def.rule]};
+  return null;
+}
+
+/* ---------- Normalisierte Spielliste für die Anzeige ---------- */
+function vorGameView(v, ctx){
+  return {kind:'v', key:v.id, slot:v.slot, machine:v.machine, a:v.a, b:v.b, rule:S.rules.vor,
+          label: S.format==='kurz'?`Gruppe ${v.group}`:'', status: v.winner?'done':(v.running?'run':'open'),
+          winner:v.winner, ls:v.ls, aPh:null, bPh:null, flip:false, startMode:'first'};
+}
+// Anwurf in der Endrunde: 'a' / 'b' / null (Ausbullen)
+function endFirst(g, ctx){
+  if (!g.a || !g.b) return 'a';
+  if (S.startRule==='bull') return null;
+  if (S.startRule==='seed'){ const ra=ctx.vrank[g.a], rb=ctx.vrank[g.b]; return ra<=rb?'a':'b'; }
+  const st = S.start[g.key];
+  return (st && st.a===g.a && st.b===g.b) ? st.first : 'a';
+}
+// Lost den Anwurf für Endrunden-Spiele aus (einmalig je Paarung)
+function ensureStarters(ctx){
+  if (isViewOnly() || S.startRule!=='random' || !ctx.end) return false;
+  let ch = false;
+  ctx.end.forEach(g=>{
+    if (!g.a || !g.b) return;
+    const st = S.start[g.key];
+    if (!st || st.a!==g.a || st.b!==g.b){ S.start[g.key] = {a:g.a,b:g.b,first:Math.random()<0.5?'a':'b'}; ch = true; }
+  });
+  return ch;
+}
+function phText(ref, ctx){
+  if (ref.t==='seed') return `${ref.r}${ref.g==='X'?'.':ref.g} der Tabelle`;
+  const d = ctx.end.find(x=>x.key===ref.k).def;
+  const nm = d.cross ? (d.label.split(' (')[0]) : (d.label||d.key);
+  return (ref.t==='W'?'Sieger: ':'Verlierer: ')+nm;
+}
+function endGameView(g, ctx){
+  const res = g.res;
+  const first = endFirst(g, ctx);
+  return {cross:!!g.def.cross, flip:first==='b', startMode:first===null?'bull':'first', kind:'e', key:g.key, slot:g.slot, machine:g.machine, a:g.a, b:g.b, rule:S.rules[g.def.rule],
+          label:g.def.label, status: res&&res.winner?'done':(res&&res.running?'run':'open'),
+          winner:res&&res.winner, ls:res&&res.ls, stale:g.stale,
+          aPh: g.a?null:phText(g.def.a,ctx), bPh: g.b?null:phText(g.def.b,ctx), tail:g.def.tail};
+}
+
+/* =========================================================
+   Rendering
+   ========================================================= */
+const $app = document.getElementById('app');
+
+function ruleText(r){
+  const i = r.in && r.in!=='Straight In' ? r.in+' · ' : '';
+  return `${r.pts} · ${i}${r.out} · max ${r.rounds} R.`;
+}
+
+// Kompakte Spielzeile: Sieger antippen, Verlierer-Rest tippen – wird automatisch gespeichert.
+function gameCard(g, ctx, nextSet){
+  const name = id => ctx.U[id] ? esc(ctx.U[id].name) : '';
+  const known = g.a && g.b;
+  const ed = UI.edit[g.key] || {};
+  const w  = ed.w  !== undefined ? ed.w  : g.winner;
+  const ls = ed.ls !== undefined ? ed.ls : g.ls;
+  const st = g.status;
+  const badge = {open:'Offen', run:'Läuft', done:'Fertig'}[st];
+  const next = nextSet && nextSet.has(g.key);
+  const L = g.flip ? {id:g.b,n:2,ph:g.bPh} : {id:g.a,n:1,ph:g.aPh};
+  const R = g.flip ? {id:g.a,n:1,ph:g.aPh} : {id:g.b,n:2,ph:g.bPh};
+  const side = (s,first) => {
+    if (!s.id) return `<div class="side ph">${esc(s.ph||'')}</div>`;
+    const tag = first && g.startMode==='first' ? '<small>🎯 Anwurf</small>' : '';
+    return `<button class="side ${w===s.n?'sel':''}" data-act="win" data-key="${g.key}" data-w="${s.n}"><span>${w===s.n?'✔ ':''}${name(s.id)}</span>${tag}</button>`;
+  };
+  const loserId = w ? (w===1 ? g.b : g.a) : null;
+  const needLs = known && w && (ls===''||ls==null);
+  const lbl = g.label ? `<span class="g-lab">${esc(g.label)}</span>` : '';
+  return `<div class="game ${st} ${next?'next':''}" data-g="${g.key}">
+    <div class="gtop"><b>#${g.slot}</b>
+      <span class="badge ${known?st:'wait'}">${known?badge:'Wartet'}</span>
+      ${next&&st==='open'?'<span class="pill">als Nächstes</span>':''}
+      ${g.startMode==='bull'&&known?'<span class="pill r">Ausbullen</span>':''}
+      ${lbl}
+      <span class="gact">
+        ${known&&st==='open'&&!ed.w?`<button class="mini" data-act="startGame" data-key="${g.key}" title="Spiel als „läuft“ markieren">▶</button>`:''}
+        ${known&&g.startMode==='first'&&g.kind==='e'&&st!=='done'?`<button class="mini" data-act="swapStart" data-key="${g.key}" title="Anwurf tauschen">⇄</button>`:''}
+        ${known&&(st==='done'||ed.w)?`<button class="mini" data-act="clearGame" data-key="${g.key}" title="Ergebnis löschen">↺</button>`:''}
+      </span></div>
+    ${g.stale?'<div class="msg warn small">Paarung hat sich geändert – altes Ergebnis ignoriert. Bitte neu eintragen.</div>':''}
+    <div class="gmain">${side(L,true)}${side(R,false)}
+      ${known?`<input type="number" class="ls ${needLs?'need':''}" inputmode="numeric" min="0" max="${g.rule.pts}" placeholder="Rest" data-ls="${g.key}" value="${ls==null?'':esc(ls)}" title="Restpunkte des Verlierers">`:'<div></div>'}</div>
+    ${needLs?`<div class="hint">Rest von <b>${name(loserId)}</b> eintragen – wird automatisch gespeichert</div>`:''}
+    <div class="grule">${ruleText(g.rule)}</div></div>`;
+}
+
+function tableHtml(g, ctx, title){
+  const rows = ctx.stand[g], complete = ctx.complete[g];
+  const anyTie = complete && rows.some(r=>r.tie);
+  return `<div class="card"><h3>${title}</h3>
+  <table class="t"><thead><tr><th>#</th><th class="l">Name</th><th>Sp</th><th>S</th><th>N</th><th>Pkt</th><th title="Summe der eigenen Restpunkte aus verlorenen Spielen – weniger ist besser">V-Score</th><th title="Anzahl Spiele mit eigenem Anwurf">Anwurf</th>${anyTie?'<th>Ausbullen</th>':''}</tr></thead><tbody>
+  ${rows.map(r=>`<tr class="${r.rank<=2?'top':''}"><td>${r.rank}</td>
+    <td class="l nm">${esc(r.name)}${r.dv&&r.h?'<span class="pill" title="Direkter Vergleich entschieden">DV</span>':''}${r.bull?`<span class="pill r" title="Ausbullen-Rang">AB ${r.bull}</span>`:''}</td>
+    <td>${r.sp}</td><td>${r.w}</td><td>${r.l}</td><td><b>${r.pts}</b></td><td>${r.ls}</td><td class="muted">${S.vor.filter(v=>v.group===g&&v.a===r.id).length}/${rows.length-1}</td>
+    ${anyTie?`<td>${r.tie||r.bull?`<input type="number" min="1" inputmode="numeric" data-bull="${r.id}" value="${r.bull||''}" placeholder="1=besser">`:''}</td>`:''}</tr>`).join('')}
+  </tbody></table>
+  <div class="muted small" style="margin-top:8px">Sortierung: Punkte (2 pro Sieg) → Verlierer-Score (<b>niedriger = besser</b>) → direkter Vergleich (bei genau 2) → Ausbullen → Startnummer.</div>
+  ${anyTie?`<div class="msg warn small">Gleichstand nicht auflösbar – bitte Ausbullen-Rang eintragen (1 = besser). Bis dahin zählt die Startnummer.</div>`:''}
+  </div>`;
+}
+
+function nextGames(ctx, list){ // pro Automat das erste offene Spiel
+  const set = new Set(), seen = {};
+  list.slice().sort((x,y)=>x.slot-y.slot).forEach(g=>{
+    if (g.status==='done') return;
+    if (g.a&&g.b && !seen[g.machine]){ seen[g.machine]=1; set.add(g.key); }
+  });
+  return set;
+}
+const machineName = m => m===1 ? 'Automat 1 · Links' : 'Automat 2 · Rechts';
+
+function slotGrid(list, ctx, all){
+  const next = nextGames(ctx, all || list);
+  const slots = [...new Set(list.map(g=>g.slot))].sort((a,b)=>a-b);
+  let h = `<div class="slothead"><span></span><span>🎯 ${machineName(1)}</span><span>🎯 ${machineName(2)}</span></div>`;
+  slots.forEach(t=>{
+    const cell = m => list.filter(g=>g.slot===t&&g.machine===m).map(g=>gameCard(g,ctx,next)).join('') || '<div class="muted small" style="padding:10px">–</div>';
+    h += `<div class="slotrow"><div class="no">${t}</div><div>${cell(1)}</div><div>${cell(2)}</div></div>`;
+  });
+  return h;
+}
+
+/* ---------- Tab: Setup ---------- */
+function estRow(format, label, desc, ests, rec){
+  const e = ests[format], n = planUnitCount(), budget = S.hours*60;
+  const disabled = format==='kurz' && n<4;
+  let est = '';
+  if (e){
+    const pct = Math.min(100, e.total/budget*100), cls = e.total>budget?'over':(e.total>budget*0.92?'warn':'');
+    est = `<div class="est"><b>≈ ${fmtMin(e.total)}</b> <span class="muted">(Vorrunde ${fmtMin(e.vorMin)} · Endrunde ${fmtMin(e.endMin)}${e.pauseMin?` · Pause ${e.pauseMin} Min.`:''})</span>
+      <div class="bar ${cls}" style="margin-top:6px"><i style="width:${pct}%"></i></div>
+      <div class="small" style="margin-top:4px;color:${e.total>budget?'var(--red)':'var(--green)'}">${e.total>budget?`⚠ ${Math.round(e.total-budget)} Min. über dem Zeitbudget`:`✔ passt (${Math.round(budget-e.total)} Min. Puffer)`}</div></div>`;
+  } else est = `<div class="est muted">${disabled?'Erst ab 4 Spielern/Teams möglich.':'Mehr Teilnehmer eintragen für eine Prognose.'}</div>`;
+  return `<button class="tile ${S.format===format?'on':''}" data-act="setFormat" data-v="${format}" ${disabled||S.started?'disabled':''}>
+    ${rec?'<span class="rec">EMPFOHLEN</span>':''}<h4>${label}</h4><div class="muted small">${desc}</div>${est}</button>`;
+}
+
+function renderSetup(ctx){
+  const n = planUnitCount(), p = S.players.length;
+  const locked = S.started;
+  const ests = {};
+  ['kurz','lang'].forEach(f=>{ try{ ests[f] = estimate(f,n,S.rules,S.times,S.pauseMin,S.lastPlace); }catch(e){ ests[f]=null; } });
+  const budget = S.hours*60;
+  // Empfehlung
+  let rec = null;
+  const fit = f => ests[f] && ests[f].total<=budget;
+  if (ests.lang && fit('lang') && n<=11) rec='lang';
+  else if (ests.kurz && fit('kurz')) rec='kurz';
+  else if (ests.lang && fit('lang')) rec='lang';
+  else if (ests.kurz && ests.lang) rec = ests.kurz.total<=ests.lang.total?'kurz':'lang';
+  else rec = ests.kurz?'kurz':(ests.lang?'lang':null);
+
+  const cur = ests[S.format];
+  let timeMsg = '';
+  if (cur){
+    if (cur.total>budget){
+      const alts = [];
+      const other = S.format==='kurz'?'lang':'kurz';
+      if (ests[other] && ests[other].total<=budget) alts.push(`Format <b>${other==='kurz'?'Kurz / Kompakt':'Lang / Ausführlich'}</b> (≈ ${fmtMin(ests[other].total)})`);
+      if (S.mode==='single' && p>=6){
+        const nn = Math.floor(p/2);
+        ['kurz','lang'].forEach(f=>{ try{ const e=estimate(f,nn,S.rules,S.times,S.pauseMin,S.lastPlace); if(e&&e.total<=budget) alts.push(`<b>Doppel-Modus</b> mit ${nn} Teams im Format ${f==='kurz'?'Kurz':'Lang'} (≈ ${fmtMin(e.total)})`); }catch(_){} });
+      }
+      if (S.rules.vor.pts>201){
+        try{ const r2 = JSON.parse(JSON.stringify(S.rules)); r2.vor.pts=201; const e=estimate(S.format,n,r2,S.times,S.pauseMin,S.lastPlace); if(e&&e.total<=budget) alts.push(`Vorrunde nur <b>201</b> statt ${S.rules.vor.pts} (≈ ${fmtMin(e.total)})`);}catch(_){}
+      }
+      if (S.pauseMin>0){
+        const e2 = cur.total-S.pauseMin; if (e2<=budget) alts.push(`Essenpause streichen (≈ ${fmtMin(e2)})`);
+      }
+      timeMsg = `<div class="msg bad"><b>⚠ Das gewählte Format dauert ca. ${fmtMin(cur.total)} und überschreitet die ${S.hours.toString().replace('.',',')} Std. um ${Math.round(cur.total-budget)} Min.</b>
+        ${alts.length?`<br>Vorschlag: ${alts.join(' &nbsp;·&nbsp; ')}`:'<br>Kein Format passt – Zeitbudget erhöhen, Spiele verkürzen oder Teilnehmerzahl senken.'}</div>`;
+    } else timeMsg = `<div class="msg ok">✔ Das gewählte Format passt in die Zeit (≈ ${fmtMin(cur.total)} von ${fmtMin(budget)}).</div>`;
+  }
+  const recBtn = (rec && rec!==S.format && !locked) ? `<div class="msg info">Empfehlung für ${n} ${S.mode==='double'?'Teams':'Spieler'}: <b>${rec==='kurz'?'Kurz / Kompakt':'Lang / Ausführlich'}</b> &nbsp;<button class="btn sm" data-act="setFormat" data-v="${rec}">Empfehlung übernehmen</button></div>` : '';
+
+  // Teilnehmer
+  const plist = S.players.map((pl,i)=>`<li><span class="sn">${i+1}</span><span class="nm">${esc(pl.name)}</span>${locked?'':`<button class="x" data-act="rmPlayer" data-id="${pl.id}" title="Entfernen">✕</button>`}</li>`).join('');
+  const card1 = `<div class="card"><h2>1 · Teilnehmer <span class="chip"><b>${p}</b> / ${MAX_PLAYERS}</span></h2>
+    ${locked?'<div class="msg info small">Turnier läuft – Teilnehmer sind gesperrt.</div>':`
+    <div class="row"><input type="text" id="newName" placeholder="Name eintragen + Enter (mehrere mit Komma)" autocomplete="off" ${p>=MAX_PLAYERS?'disabled':''}>
+    <button class="btn primary" data-act="addPlayer">+ Hinzufügen</button></div>`}
+    ${p<MIN_PLAYERS?`<div class="msg warn small">Noch ${MIN_PLAYERS-p} Spieler bis zum Minimum (${MIN_PLAYERS}).</div>`:''}
+    <ul class="plist">${plist}</ul></div>`;
+
+  // Modus
+  let teamBlock = '';
+  if (S.mode==='double'){
+    const odd = p%2===1;
+    teamBlock = `${odd?`<div class="msg warn small"><b>Ungerade Spielerzahl (${p}):</b> Eine gerade Zahl ist optimal. Beim Auslosen entsteht ein <b>Dreierteam</b> (der „Springer“ wechselt sich mit seinem Team pro Spiel ab) – alternativ einen Spieler ergänzen/streichen.</div>`:''}
+      ${locked?'':`<button class="btn primary" data-act="drawTeams" ${p<MIN_PLAYERS?'disabled':''}>🎲 ${S.teams?'Teams neu auslosen':'Teams auslosen'}</button>`}
+      ${S.teams?`<ul class="plist">${S.teams.map((t,i)=>`<li><span class="sn">${i+1}</span><span class="nm" title="${esc(t.name)}">${esc(t.name)}</span>${t.three?'<span class="pill r">3er</span>':''}</li>`).join('')}</ul>`:'<div class="muted small" style="margin-top:8px">Noch keine Teams ausgelost.</div>'}`;
+  }
+  const card2 = `<div class="card"><h2>2 · Turniermodus</h2>
+    <div class="tiles"><button class="tile ${S.mode==='single'?'on':''}" data-act="setMode" data-v="single" ${locked?'disabled':''}><h4>Einzelturnier</h4><div class="muted small">Jeder spielt für sich.</div></button>
+    <button class="tile ${S.mode==='double'?'on':''}" data-act="setMode" data-v="double" ${locked?'disabled':''}><h4>Zweierteam (Doppel)</h4><div class="muted small">Feste Teams, zufällig ausgelost.</div></button></div>
+    <div style="margin-top:12px">${teamBlock}</div></div>`;
+
+  // Format & Zeit
+  const card3 = `<div class="card"><h2>3 · Turnierlänge &amp; Zeit</h2>
+    <div class="grid2" style="margin-bottom:12px">
+      <div><label class="small muted">Verfügbare Gesamtzeit (Std.)</label><input type="number" step="0.25" min="1" max="12" data-set="hours" data-num="1" value="${S.hours}"></div>
+      <div><label class="small muted">Essenpause (Min.)</label><input type="number" step="5" min="0" max="90" data-set="pauseMin" data-num="1" value="${S.pauseMin}"></div></div>
+    <div class="tiles">
+      ${estRow('kurz','Kurz / Kompakt','2 Gruppen (A = Automat 1, B = Automat 2), Jeder-gegen-Jeden, danach Kreuz- &amp; Platzierungsspiele über alle Plätze. Ab ca. 12 Teilnehmern.',ests,rec==='kurz')}
+      ${estRow('lang','Lang / Ausführlich','Eine große Gruppe (Jeder-gegen-Jeden auf beiden Automaten), danach Platzierungsspiele &amp; Finale. Bis ca. 8–10 Teilnehmer.',ests,rec==='lang')}
+    </div>
+    ${recBtn}${timeMsg}
+    <details><summary>Spieldauer &amp; Details anpassen</summary>
+      <div class="grid2"><div><label class="small muted">Min. pro 301-Spiel</label><input type="number" step="0.5" min="3" data-set="times.m301" data-num="1" value="${S.times.m301}"></div>
+      <div><label class="small muted">Min. pro 501-Spiel</label><input type="number" step="0.5" min="3" data-set="times.m501" data-num="1" value="${S.times.m501}"></div>
+      <div><label class="small muted">Wechselzeit pro Spiel (Min.)</label><input type="number" step="0.5" min="0" data-set="times.change" data-num="1" value="${S.times.change}"></div>
+      <div><label class="small muted">Ungerade Teilnehmerzahl (letzter Platz)</label><select data-set="lastPlace" ${locked?'disabled':''}><option value="freilos" ${S.lastPlace==='freilos'?'selected':''}>Freilos (Gruppenletzter der größeren Gruppe)</option><option value="playoff" ${S.lastPlace==='playoff'?'selected':''}>Mini-Playoff um den letzten Platz</option></select></div></div>
+    </details></div>`;
+
+  // Regeln
+  const fld = (cap,inner)=>`<div><div class="small muted">${cap}</div>${inner}</div>`;
+  const rr = (k,l)=>{ const r=S.rules[k]; return `<div class="ruleBox"><label>${l}</label><div class="ruleRow">
+    ${fld('Punkte',`<select data-set="rules.${k}.pts" data-num="1">${[101,201,301,401,501,701].map(x=>`<option ${r.pts===x?'selected':''}>${x}</option>`).join('')}</select>`)}
+    ${fld('max. Runden',`<input type="number" min="1" max="40" data-set="rules.${k}.rounds" data-num="1" value="${r.rounds}">`)}
+    ${fld('In-Modus',`<select data-set="rules.${k}.in">${['Straight In','Double In','Master In'].map(x=>`<option ${(r.in||'Straight In')===x?'selected':''}>${x}</option>`).join('')}</select>`)}
+    ${fld('Out-Modus',`<select data-set="rules.${k}.out">${['Master Out','Double Out','Straight Out'].map(x=>`<option ${r.out===x?'selected':''}>${x}</option>`).join('')}</select>`)}</div></div>`; };
+  const card4 = `<div class="card"><h2>4 · Spielregeln pro Phase</h2>
+    ${rr('vor','Vorrunde')}${rr('platz','Platzierungsspiele')}${rr('finale','Finale (Platz 1–2)')}
+    <div style="margin-top:12px"><label class="small muted">Anwurf in der Endrunde</label>
+    <select data-set="startRule"><option value="random" ${S.startRule==='random'?'selected':''}>Auslosen (Zufall, mit Tauschen-Button)</option><option value="seed" ${S.startRule==='seed'?'selected':''}>Besser Platzierter aus der Vorrunde beginnt</option><option value="bull" ${S.startRule==='bull'?'selected':''}>Ausbullen am Automaten (keine Vorgabe)</option></select>
+    <div class="muted small" style="margin-top:6px">Vorrunde: Der Anwurf ist automatisch gleichmäßig verteilt – jeder beginnt gleich oft (max. 1 Spiel Unterschied). Die Person links beginnt.</div></div></div>`;
+
+  // Gruppen
+  let card5 = '';
+  if (S.format==='kurz'){
+    let inner = '';
+    if (S.groups){
+      const U = ctx.U;
+      const col = (g,m) => `<div class="col"><h4>Gruppe ${g} <span class="muted small">· Automat ${m} · ${S.groups[g].length}</span></h4>${S.groups[g].map(id=>`<div class="unit"><span class="nm">${esc(U[id]?U[id].name:'?')}</span>${locked?'':`<button class="btn sm ghost" data-act="moveUnit" data-id="${id}">→ ${g==='A'?'B':'A'}</button>`}</div>`).join('')}</div>`;
+      inner = `<div class="gl">${col('A',1)}${col('B',2)}</div>`;
+    } else inner = '<div class="muted small">Noch nicht ausgelost.</div>';
+    card5 = `<div class="card"><h2>5 · Gruppen-Auslosung</h2>
+      ${locked?'':`<button class="btn primary" data-act="drawGroups" ${n<4||(S.mode==='double'&&!S.teams)?'disabled':''}>🎲 ${S.groups?'Gruppen neu auslosen':'Gruppen auslosen'}</button>`}
+      <div style="margin-top:12px">${inner}</div>
+      ${n%2?'<div class="msg info small">Ungerade Anzahl: Gruppe A ist um 1 größer. Der Letzte aus A erhält am Ende ein Freilos (letzter Platz) bzw. spielt ein Mini-Playoff.</div>':''}</div>`;
+  }
+
+  // Start
+  const cs = canStart();
+  const startBlock = locked
+    ? `<div class="card"><div class="msg ok">Turnier läuft seit ${clock(new Date(S.startedAt))} Uhr.</div>
+        <div class="row"><button class="btn danger" data-act="restartSetup">Spielplan verwerfen &amp; neu aufsetzen</button>
+        <button class="btn" data-act="demo">Demo-Daten aus Testturnier laden</button></div></div>`
+    : `<div class="card"><h2>Turnier starten</h2>
+        ${cs.msgs.map(m=>`<div class="msg warn small">${esc(m)}</div>`).join('')}
+        <div class="row"><button class="btn primary" style="min-height:56px;font-size:1.15rem" data-act="start" ${cs.ok?'':'disabled'}>🎯 Turnier starten – Spielplan erzeugen</button>
+        <button class="btn" data-act="demo">Demo-Daten aus Testturnier laden</button></div></div>`;
+
+  return `<div class="cols">${card1}${card2}</div><div style="height:16px"></div><div class="cols">${card3}<div>${card4}${card5}</div></div><div style="height:16px"></div>${startBlock}`;
+}
+
+/* ---------- Tab: Vorrunde ---------- */
+function renderVor(ctx){
+  if (!S.started) return `<div class="card"><h2>Vorrunde</h2><p class="muted">Das Turnier ist noch nicht gestartet.${isViewOnly()?' Sobald es losgeht, erscheinen Spielplan und Tabellen hier live.':' Bitte im Tab „Setup &amp; Auslosung“ starten.'}</p></div>`;
+  const pct = ctx.vorCount? ctx.vorFin/ctx.vorCount*100 : 0;
+  let h = `<div class="progress"><b>Vorrunde: ${ctx.vorFin} / ${ctx.vorCount} Spiele</b><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  if (ctx.vorDone) h += `<div class="msg ok">✔ Vorrunde abgeschlossen – die Endrunde wurde automatisch aus den Tabellenplätzen erzeugt. <button class="btn sm good" data-tab="end">Zur Endrunde →</button></div>`;
+  if (S.format==='kurz'){
+    h += '<div class="cols2">';
+    ['A','B'].forEach((g,i)=>{
+      const list = S.vor.filter(v=>v.group===g).map(v=>vorGameView(v,ctx));
+      const next = nextGames(ctx,list);
+      h += `<section><div class="card" style="background:var(--panel2)"><h2 style="margin:0">🎯 ${machineName(i+1)} · Gruppe ${g}</h2></div>
+        ${tableHtml(g,ctx,`Live-Tabelle Gruppe ${g}`)}
+        ${list.sort((x,y)=>x.slot-y.slot).map(x=>gameCard(x,ctx,next)).join('')}</section>`;
+    });
+    h += '</div>';
+  } else {
+    const list = S.vor.map(v=>vorGameView(v,ctx));
+    h += `<div class="lang"><section class="card">${slotGrid(list,ctx)}</section><aside style="position:sticky;top:120px">${tableHtml('X',ctx,'Live-Tabelle')}</aside></div>`;
+  }
+  return h;
+}
+
+/* ---------- Tab: Endrunde ---------- */
+function renderEnd(ctx){
+  if (!S.started) return `<div class="card"><h2>Endrunde</h2><p class="muted">Noch nicht gestartet.</p></div>`;
+  if (!ctx.vorDone){
+    const open = S.vor.filter(v=>!v.winner).length;
+    return `<div class="card"><h2>Endrunde &amp; Platzierungsspiele</h2>
+      <p class="muted">Die Paarungen werden automatisch erzeugt, sobald alle Vorrundenspiele abgeschlossen sind. Noch offen: <b>${open}</b> Spiele.</p>
+      <div class="bar"><i style="width:${ctx.vorFin/ctx.vorCount*100}%"></i></div>
+      <button class="btn" style="margin-top:12px" data-tab="vor">Zur Vorrunde</button></div>`;
+  }
+  const list = ctx.end.map(g=>endGameView(g,ctx));
+  const fin = list.filter(g=>g.status==='done').length;
+  let h = `<div class="progress"><b>Endrunde: ${fin} / ${list.length} Spiele</b><div class="bar"><i style="width:${fin/list.length*100}%"></i></div></div>`;
+  const tieWarn = Object.keys(ctx.stand).some(g=>ctx.stand[g].some(r=>r.tie));
+  if (tieWarn) h += `<div class="msg warn">Achtung: In der Vorrunde gibt es einen nicht aufgelösten Gleichstand. Die Paarungen nutzen vorläufig die Startnummer – Ausbullen-Rang in der Vorrunden-Tabelle eintragen (Paarungen aktualisieren sich automatisch).</div>`;
+  if (ctx.bye) h += `<div class="msg info"><b>Freilos:</b> ${esc(ctx.U[ctx.bye.unit].name)} (letzter Platz der größeren Gruppe) belegt Platz ${ctx.bye.place}.</div>`;
+  const cross = list.filter(g=>g.cross), plc = list.filter(g=>!g.cross);
+  if (cross.length) h += `<div class="card sec cross"><h2>⚔ Runde 1 · Kreuzspiele</h2>
+    <div class="muted small" style="margin-bottom:10px">Gruppe A gegen Gruppe B über Kreuz – das Ergebnis entscheidet, in welcher Platzierungsrunde es weitergeht (Sieger oben, Verlierer unten).</div>
+    ${slotGrid(cross,ctx,list)}</div>`;
+  h += `<div class="card sec place"><h2>🏅 ${cross.length?'Runde 2 · ':''}Platzierungsspiele</h2>
+    <div class="muted small" style="margin-bottom:10px">${cross.length?'Sieger und Verlierer der Kreuzspiele spielen die Plätze aus – das Finale kommt zuletzt.':'Je zwei in der Tabelle benachbarte Spieler spielen ihre Plätze aus – das Finale kommt zuletzt.'}</div>
+    ${slotGrid(plc,ctx,list)}</div>`;
+  if (ctx.allDone) h += `<div class="msg ok">🏆 Alle Spiele sind gespielt! <button class="btn sm good" data-tab="result">Zum Gesamtergebnis →</button></div>`;
+  return h;
+}
+
+/* ---------- Tab: Ergebnis ---------- */
+function allResults(ctx){
+  const res = [];
+  S.vor.forEach(v=>{ if (v.winner) res.push({w:v.winner===1?v.a:v.b, l:v.winner===1?v.b:v.a, ls:v.ls, ph:'vor'}); });
+  (ctx.end||[]).forEach(g=>{ if (g.res&&g.res.winner) res.push({w:g.res.winner===1?g.a:g.b, l:g.res.winner===1?g.b:g.a, ls:g.res.ls, ph:'end'}); });
+  return res;
+}
+function renderResult(ctx){
+  if (!S.started) return `<div class="card"><h2>Gesamtergebnis</h2><p class="muted">Noch nicht gestartet.</p></div>`;
+  const N = ctx.units.length;
+  const nm = id => id ? esc(ctx.U[id].name) : '–';
+  const P = ctx.places;
+  const final = ctx.allDone;
+  let h = '';
+  if (!ctx.vorDone) h += `<div class="msg info">Vorrunde läuft noch – das Endergebnis steht nach der Endrunde fest. Aktuelle Tabellenstände siehe Tab „Vorrunde“.</div>`;
+  else if (!final) h += `<div class="msg info">Endrunde läuft – Plätze erscheinen, sobald die Platzierungsspiele entschieden sind (vorläufig).</div>`;
+  const medal = ['🥇','🥈','🥉'];
+  h += `<div class="card"><h2>${final?'🏆 Siegertreppchen':'Siegertreppchen (vorläufig)'}</h2><div class="podium">
+     ${[2,1,3].map(pl=>`<div class="pod p${pl}"><div class="m">${medal[pl-1]}</div><div class="n">${P[pl]?nm(P[pl]):'<span class="muted">offen</span>'}</div><div class="muted">Platz ${pl}</div></div>`).join('')}</div></div>`;
+  // Gesamttabelle
+  const results = allResults(ctx);
+  const wins = {}, vorRank = {};
+  results.forEach(r=>{ wins[r.w]=(wins[r.w]||0)+1; });
+  Object.keys(ctx.stand||{}).forEach(g=>ctx.stand[g].forEach(r=>{ vorRank[r.id] = (g==='X'?'':'Gruppe '+g+' · ')+r.rank+'.'; }));
+  let rows = '';
+  for (let pl=1;pl<=N;pl++){
+    const id = P[pl];
+    rows += `<tr><td><b>${pl}.</b></td><td class="l nm">${id?nm(id):'<span class="muted">offen</span>'}</td><td>${id?vorRank[id]||'':''}</td><td>${id?(wins[id]||0):''}</td></tr>`;
+  }
+  h += `<div class="card"><h2>Gesamtplatzierung</h2><table class="t"><thead><tr><th>Platz</th><th class="l">Name</th><th>Vorrunde</th><th>Siege gesamt</th></tr></thead><tbody>${rows}</tbody></table>
+     </div>`;
+  // Fun-Stats
+  if (results.length){
+    const lossCnt = {};
+    results.forEach(r=>{ if (r.ls<=10) lossCnt[r.l]=(lossCnt[r.l]||0)+1; });
+    const maxL = Math.max(0,...Object.values(lossCnt));
+    const pech = maxL ? Object.keys(lossCnt).filter(k=>lossCnt[k]===maxL) : [];
+    const maxLs = Math.max(...results.map(r=>r.ls)), minLs = Math.min(...results.map(r=>r.ls));
+    const big = results.filter(r=>r.ls===maxLs), tight = results.filter(r=>r.ls===minLs);
+    const g = r => `${nm(r.w)} schlägt ${nm(r.l)}`;
+    const maxW = Math.max(...Object.values(wins));
+    const vorLoss = {}; S.vor.forEach(v=>{ if(v.winner){ const l=v.winner===1?v.b:v.a; vorLoss[l]=(vorLoss[l]||0)+1; } });
+    const unbeaten = ctx.units.filter(u=>S.vor.some(v=>v.winner&&(v.a===u.id||v.b===u.id)) && !vorLoss[u.id]);
+    h += `<div class="card"><h2>Fun-Stats</h2><div class="stats">
+      <div class="stat"><div class="k">😭 Pechvogel des Abends</div><div class="v">${pech.length?pech.map(nm).join(', '):'–'}</div><div class="muted small">${maxL?`${maxL}× knapp verloren (≤ 10 Rest)`:'Keine knappen Niederlagen'}</div></div>
+      <div class="stat"><div class="k">💥 Deutlichster Sieg</div><div class="v">${big.map(g).join('<br>')}</div><div class="muted small">Verlierer blieb bei ${maxLs} Rest</div></div>
+      <div class="stat"><div class="k">😅 Knappster Sieg</div><div class="v">${tight.slice(0,3).map(g).join('<br>')}${tight.length>3?` <span class="muted small">+${tight.length-3}</span>`:''}</div><div class="muted small">Verlierer nur ${minLs} Rest</div></div>
+      <div class="stat"><div class="k">🔥 Meiste Siege</div><div class="v">${Object.keys(wins).filter(k=>wins[k]===maxW).map(nm).join(', ')}</div><div class="muted small">${maxW} Siege insgesamt</div></div>
+      <div class="stat"><div class="k">🛡 Ungeschlagen in der Vorrunde</div><div class="v">${unbeaten.length?unbeaten.map(u=>esc(u.name)).join(', '):'–'}</div><div class="muted small">${unbeaten.length?'Keine Niederlage':'Niemand blieb ungeschlagen'}</div></div>
+      <div class="stat"><div class="k">🎯 Gespielte Spiele</div><div class="v">${results.length}</div><div class="muted small">${S.startedAt?`seit ${clock(new Date(S.startedAt))} Uhr`:''}</div></div>
+    </div></div>`;
+  }
+  return h;
+}
+
+/* ---------- Header ---------- */
+function remainingMin(ctx){
+  if (!S.started) return null;
+  const t = S.times;
+  const per = {};
+  S.vor.filter(v=>!v.winner).forEach(v=>{ per[v.machine]=(per[v.machine]||0)+slotMin(S.rules.vor,t); });
+  let rem = Math.max(0,...Object.values(per));
+  if (!ctx.vorDone){
+    try{ const n=ctx.units.length; const e=estimate(S.format,n,S.rules,t,0,S.lastPlace); if(e) rem+=e.endMin; }catch(_){}
+  } else {
+    const slots = {};
+    ctx.end.forEach(g=>{ if(!(g.res&&g.res.winner)) slots[g.slot]=Math.max(slots[g.slot]||0, slotMin(S.rules[g.def.rule],t)); });
+    rem = Object.values(slots).reduce((a,b)=>a+b,0);
+  }
+  return rem;
+}
+function renderChips(ctx){
+  const c = [];
+  const n = S.mode==='double'?`${S.teams?S.teams.length:Math.floor(S.players.length/2)} Teams`:`${S.players.length} Spieler`;
+  c.push(`<span class="chip">${S.mode==='double'?'Doppel':'Einzel'} · <b>${n}</b></span>`);
+  if (CLOUD.mode==='cloud'){
+    const st = {ok:'☁ live synchron', connecting:'☁ verbinde …', error:'☁ Verbindungsproblem – nur lokal gespeichert'}[CLOUD.status||'connecting'];
+    c.push(`<span class="chip">${isViewOnly()?'👀 Live-Ansicht · ':''}<b>${st}</b></span>`);
+  }
+  if (!S.started) c.push(`<span class="chip">Phase: <b>Setup</b></span>`);
+  else {
+    const ph = ctx.allDone?'Abgeschlossen':(ctx.vorDone?'Endrunde':'Vorrunde');
+    c.push(`<span class="chip">Phase: <b>${ph}</b></span>`);
+    c.push(`<span class="chip">Spiele: <b>${ctx.vorFin+(ctx.end||[]).filter(g=>g.res&&g.res.winner).length}</b></span>`);
+    if (!ctx.allDone){
+      const rem = remainingMin(ctx);
+      c.push(`<span class="chip" id="clock">Läuft seit <b>${clock(new Date(S.startedAt))}</b> · Rest ≈ <b>${fmtMin(rem)}</b> · Ende ≈ <b>${clock(new Date(Date.now()+rem*60000))}</b></span>`);
+    } else c.push(`<span class="chip">🏆 Turnier beendet</span>`);
+  }
+  return c.join('');
+}
+
+const TABS = [['setup','Setup & Auslosung'],['vor','Vorrunde'],['end','Endrunde & Platzierung'],['result','Gesamtergebnis & Stats']];
+function render(){
+  let ctx;
+  try { ctx = buildCtx(); if (ensureStarters(ctx)) save(); } catch(e){ console.error(e); ctx = {units:getUnits(),U:{},started:false}; }
+  document.getElementById('chips').innerHTML = renderChips(ctx);
+  document.body.classList.toggle('viewonly', isViewOnly());
+  const ab = document.getElementById('authBtn');
+  ab.hidden = CLOUD.mode!=='cloud';
+  ab.textContent = CLOUD.user ? '🔓 Abmelden' : '🔐 Anmelden';
+  if (isViewOnly() && S.tab==='setup') S.tab = 'vor';
+  document.getElementById('tabs').innerHTML = TABS.filter(([k])=>!(isViewOnly()&&k==='setup')).map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-tab="${k}">${l}${k==='end'&&ctx.vorDone&&!ctx.allDone?'<span class="dot"></span>':''}</button>`).join('');
+  const fn = {setup:renderSetup, vor:renderVor, end:renderEnd, result:renderResult}[S.tab] || renderSetup;
+  const sy = window.scrollY;
+  $app.innerHTML = fn(ctx);
+  window.scrollTo(0, sy);
+  if (UI.focus){ const el = document.querySelector(UI.focus); if (el) { el.focus(); if (el.select) el.select(); } UI.focus = null; }
+}
+
+/* ---------- Modal / Toast ---------- */
+function modal(title, html, buttons){
+  const m = document.getElementById('modal'), b = document.getElementById('mbox');
+  b.innerHTML = `<h3>${title}</h3><div>${html}</div><div class="mbtn">${buttons.map((x,i)=>`<button class="btn ${x.cls||''}" data-mbtn="${i}" ${x.disabled?'disabled':''}>${x.label}</button>`).join('')}</div>`;
+  m.classList.add('on');
+  b._btns = buttons;
+}
+function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+function toast(msg, bad){
+  const t = document.getElementById('toast'); t.textContent = msg; t.className = 'on'+(bad?' bad':'');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ t.className=''; }, 2800);
+}
+function doubleConfirm(title, text, action){
+  modal(title, `<p>${text}</p>`, [
+    {label:'Abbrechen', cls:'ghost', fn:closeModal},
+    {label:'Weiter …', cls:'danger', fn:()=>{
+      modal('Wirklich sicher?', `<p>Das kann <b>nicht rückgängig</b> gemacht werden. Tipp: vorher ein <b>⬇ Backup</b> speichern.</p><p>Zur Bestätigung <b>LÖSCHEN</b> eintippen:</p><input type="text" id="confirmWord" autocomplete="off" placeholder="LÖSCHEN">`,
+        [{label:'Abbrechen', cls:'ghost', fn:closeModal},
+         {label:'Endgültig ausführen', cls:'primary', fn:()=>{
+           if (document.getElementById('confirmWord').value.trim().toUpperCase()!=='LÖSCHEN'){ toast('Bitte LÖSCHEN eintippen.',true); return; }
+           closeModal(); action(); }}]);
+      setTimeout(()=>{const i=document.getElementById('confirmWord'); if(i) i.focus();},50);
+    }}]);
+}
+
+/* ---------- Backup ---------- */
+function downloadFile(json){
+  const d = new Date();
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `idyll-dart-backup-${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function exportJson(){
+  const json = JSON.stringify(S,null,1);
+  modal('Backup (JSON)',
+    '<p class="muted small">Text kopieren und z. B. in eine Notiz oder Mail einfügen. Zum Wiederherstellen unter „Import“ wieder einfügen. „Als Datei speichern“ geht nur, wenn die App lokal als Datei geöffnet ist.</p><textarea id="bk" readonly rows="8" style="font:12px/1.3 monospace">'+esc(json)+'</textarea>',
+    [{label:'Schließen',cls:'ghost',fn:closeModal},
+     {label:'Als Datei speichern',fn:()=>{ try{ downloadFile(json); }catch(e){ toast('Speichern als Datei nicht möglich – bitte kopieren.',true); } }},
+     {label:'📋 Kopieren',cls:'primary',fn:()=>{
+        const ta = document.getElementById('bk');
+        const fb = ()=>{ ta.focus(); ta.select(); toast('Text markiert – mit Strg+C kopieren.'); };
+        try{ navigator.clipboard.writeText(json).then(()=>toast('Backup kopiert.'), fb); }catch(e){ fb(); }
+     }}]);
+}
+function openImport(){
+  modal('Backup einspielen',
+    '<p class="muted small">Backup-Text hier einfügen oder eine JSON-Datei wählen.</p><textarea id="impText" rows="7" placeholder="Backup-Text einfügen …" style="font:12px/1.3 monospace"></textarea>',
+    [{label:'Abbrechen',cls:'ghost',fn:closeModal},
+     {label:'Datei wählen …',fn:()=>document.getElementById('impFile').click()},
+     {label:'Einspielen',cls:'primary',fn:()=>parseBackup(document.getElementById('impText').value)}]);
+}
+function importJson(file){ const fr = new FileReader(); fr.onload = ()=>parseBackup(fr.result); fr.readAsText(file); }
+function parseBackup(text){
+  try{
+    const o = JSON.parse(text);
+    if (!o || o.v!==1 || !Array.isArray(o.players) || !Array.isArray(o.vor)) throw new Error('Format');
+    modal('Backup einspielen?', `<p>Der aktuelle Stand wird ersetzt (${o.players.length} Spieler, ${o.vor.filter(v=>v.winner).length}/${o.vor.length} Vorrundenspiele fertig).</p>`,
+      [{label:'Abbrechen',cls:'ghost',fn:closeModal},{label:'Einspielen',cls:'primary',fn:()=>{ S=Object.assign(defaultState(),o); UI.edit={}; closeModal(); commit(); toast('Backup geladen.'); }}]);
+  }catch(e){ toast('Das ist kein gültiges Idyll-Backup.',true); }
+}
+
+/* ---------- Demo ---------- */
+const DEMO = {
+  A:{names:['Thomas','Basti','Benjamin','Mütze','Anja','Mario','Elke'],
+     g:[[1,3,1,52],[2,5,1,2],[1,4,1,10],[5,7,1,172],[1,2,1,40],[3,7,1,33],[2,6,1,5],[4,7,1,8],[3,5,1,2],[1,6,1,3],[3,4,1,4],[5,6,1,2],[2,7,1,6],[3,6,1,6],[2,4,1,4],[1,7,1,7],[2,3,2,6],[4,6,2,11],[1,5,1,22],[6,7,1,2],[4,5,2,6]]},
+  B:{names:['Stenzi','Calle','Ralf','Dirk','Sven','Frank','Nico'],
+     g:[[1,3,1,6],[2,5,2,12],[1,4,2,3],[5,7,2,2],[1,2,1,6],[3,7,2,4],[2,6,1,4],[4,7,2,10],[3,5,1,24],[1,6,1,16],[3,4,2,2],[5,6,1,10],[2,7,1,34],[3,6,1,8],[2,4,1,55],[1,7,1,5],[2,3,1,8],[4,6,1,2],[1,5,1,9],[6,7,2,87],[4,5,1,8]]}
+};
+function loadDemo(){
+  S = defaultState();
+  const ids = {A:[],B:[]};
+  ['A','B'].forEach(g=>DEMO[g].names.forEach(n=>{ const id=uid(); S.players.push({id,name:n}); ids[g].push(id); }));
+  S.groups = {A:ids.A.slice(), B:ids.B.slice()};
+  S.format = 'kurz'; S.mode = 'single';
+  startTournament();
+  ['A','B'].forEach(g=>{
+    DEMO[g].g.forEach(([i,j,w,ls])=>{
+      const ia=ids[g][i-1], ib=ids[g][j-1], wu = w===1?ia:ib;
+      const v = S.vor.find(x=>x.group===g && ((x.a===ia&&x.b===ib)||(x.a===ib&&x.b===ia)));
+      v.winner = v.a===wu?1:2; v.ls = ls;
+    });
+  });
+  S.tab = 'vor'; UI.edit = {};
+  commit(); toast('Demo-Turnier geladen (14 Spieler, Vorrunde komplett).');
+}
+
+/* ---------- Events ---------- */
+function addPlayers(){
+  const inp = document.getElementById('newName'); if (!inp) return;
+  const names = inp.value.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  if (!names.length) return;
+  let added = 0;
+  names.forEach(n=>{ if (S.players.length<MAX_PLAYERS){ S.players.push({id:uid(),name:n}); added++; } });
+  if (added<names.length) toast(`Maximal ${MAX_PLAYERS} Spieler.`,true);
+  S.teams = null; S.groups = null;
+  UI.focus = '#newName'; commit();
+}
+function setPath(path, val){
+  const parts = path.split('.'); let o = S;
+  for (let i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = val;
+}
+function applyEdit(key){ /* nur Vorbereitung für Fokus */ }
+
+document.addEventListener('click', e=>{
+  const mb = e.target.closest('[data-mbtn]');
+  if (mb){ const b = document.getElementById('mbox'); const f = b._btns[+mb.dataset.mbtn]; if (f && f.fn) f.fn(); return; }
+  const tab = e.target.closest('[data-tab]');
+  if (tab){ S.tab = tab.dataset.tab; if (isViewOnly()) render(); else commit(); window.scrollTo(0,0); return; }
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, key = el.dataset.key;
+  if (isViewOnly() && a!=='authToggle') return;          // Live-Ansicht: nichts verändern
+  switch(a){
+    case 'authToggle': if (CLOUD.user){ CLOUD.logout && CLOUD.logout(); } else { CLOUD.login && CLOUD.login(); } break;
+    case 'addPlayer': addPlayers(); break;
+    case 'rmPlayer': S.players = S.players.filter(p=>p.id!==el.dataset.id); S.teams=null; S.groups=null; commit(); break;
+    case 'setMode': S.mode = el.dataset.v; S.teams=null; S.groups=null; commit(); break;
+    case 'setFormat': S.format = el.dataset.v; commit(); break;
+    case 'drawTeams': drawTeams(); if (S.format==='kurz') S.groups=null; commit(); break;
+    case 'drawGroups': drawGroups(); commit(); break;
+    case 'moveUnit': {
+      const id = el.dataset.id, from = S.groups.A.includes(id)?'A':'B', to = from==='A'?'B':'A';
+      S.groups[from] = S.groups[from].filter(x=>x!==id); S.groups[to].push(id); commit(); break; }
+    case 'start': { const c = canStart(); if (!c.ok){ toast(c.msgs[0],true); break; } startTournament(); commit(); window.scrollTo(0,0); break; }
+    case 'win': {
+      const ed = UI.edit[key] = UI.edit[key]||{}; ed.w = +el.dataset.w;
+      if (!commitGame(key)){ UI.focus = `[data-ls="${key}"]`; render(); }
+      break; }
+    case 'clearGame': {
+      const v = S.vor.find(x=>x.id===key);
+      if (v){ v.winner=null; v.ls=null; v.running=false; } else delete S.end[key];
+      delete UI.edit[key]; commit(); break; }
+    case 'swapStart': {
+      const st = S.start[key]; if (st){ st.first = st.first==='a'?'b':'a'; commit(); }
+      break; }
+    case 'startGame': {
+      const v = S.vor.find(x=>x.id===key);
+      if (v) v.running = true;
+      else { const ctx = buildCtx(); const g = (ctx.end||[]).find(x=>x.key===key); if (g&&g.a&&g.b) S.end[key] = {running:true,a:g.a,b:g.b}; }
+      commit(); break; }
+    case 'export': exportJson(); break;
+    case 'import': openImport(); break;
+    case 'reset': doubleConfirm('Turnier zurücksetzen?','Alle Spieler, Auslosungen und Ergebnisse werden gelöscht.', ()=>{ S=defaultState(); UI.edit={}; commit(); toast('Turnier zurückgesetzt.'); }); break;
+    case 'restartSetup': doubleConfirm('Spielplan verwerfen?','Alle bisherigen Ergebnisse gehen verloren; die Teilnehmer bleiben erhalten und du landest wieder im Setup.', ()=>{ S.started=false; S.vor=[]; S.end={}; S.bull={}; S.startedAt=null; S.tab='setup'; UI.edit={}; commit(); }); break;
+    case 'demo': {
+      if (S.players.length || S.started) modal('Demo-Daten laden?','<p>Der aktuelle Stand wird durch das Testturnier (14 Spieler, Vorrunde komplett) ersetzt. Tipp: vorher ein Backup speichern.</p>',[{label:'Abbrechen',cls:'ghost',fn:closeModal},{label:'Demo laden',cls:'primary',fn:()=>{closeModal();loadDemo();}}]);
+      else loadDemo();
+      break; }
+  }
+});
+document.addEventListener('input', e=>{
+  const t = e.target;
+  if (isViewOnly()) return;
+  if (t.dataset && t.dataset.ls){
+    const k = t.dataset.ls, ed = UI.edit[k] = UI.edit[k]||{}; ed.ls = t.value;
+    clearTimeout(lsTimer); lsTimer = setTimeout(()=>commitGame(k), 1500);   // Auto-Speichern nach kurzer Pause
+  }
+});
+document.addEventListener('change', e=>{
+  const t = e.target;
+  if (isViewOnly()) return;
+  if (t.id==='impFile'){ if (t.files[0]) importJson(t.files[0]); t.value=''; return; }
+  if (t.dataset && t.dataset.ls){ clearTimeout(lsTimer); commitGame(t.dataset.ls); return; }
+  if (t.dataset && t.dataset.set){
+    let v = t.value;
+    if (t.dataset.num){ v = parseFloat(String(v).replace(',','.')); if (!Number.isFinite(v)) return; }
+    setPath(t.dataset.set, v); commit(); return;
+  }
+  if (t.dataset && t.dataset.bull){
+    const v = parseInt(t.value,10);
+    if (v>0) S.bull[t.dataset.bull]=v; else delete S.bull[t.dataset.bull];
+    commit();
+  }
+});
+document.addEventListener('keydown', e=>{
+  if (e.key==='Enter' && !isViewOnly()){
+    if (e.target.id==='newName'){ e.preventDefault(); addPlayers(); }
+    else if (e.target.dataset && e.target.dataset.ls){ e.preventDefault(); clearTimeout(lsTimer); commitGame(e.target.dataset.ls); }
+  }
+  if (e.key==='Escape') closeModal();
+});
+
+/* ---------- Brücke zum Cloud-Modul (siehe zweites Skript) ---------- */
+window.IdyllApp = {
+  get state(){ return S; },
+  toast,
+  setCloud(o){ Object.assign(CLOUD,o); render(); },
+  setRole(r){ CLOUD.role = r; render(); },
+  setUser(u){ CLOUD.user = u; render(); },
+  setStatus(s){ CLOUD.status = s; render(); },
+  // Stand aus der Cloud übernehmen (eigener Tab bleibt erhalten)
+  applyRemote(o){
+    const tab = S.tab;
+    S = o ? Object.assign(defaultState(), o) : defaultState();
+    S.tab = tab; UI.edit = {};
+    if (CLOUD.role==='host'){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+    render();
+  },
+  pushNow(){ if (CLOUD.push) CLOUD.push(S); },
+  pushIfAny(){ if ((S.started || S.players.length) && CLOUD.push){ S._rev = (S._rev||0)+1; CLOUD.push(S); } },
+  showUid(uid){
+    modal('Fast fertig – deine Nutzer-ID', `<p>Trag diese ID in <code>config.js</code> bei <code>OWNER_UID</code> und in den Firestore-Regeln ein (siehe README):</p><p><code style="word-break:break-all;user-select:all">${esc(uid)}</code></p>`, [{label:'Schließen',cls:'primary',fn:closeModal}]);
+  }
+};
+
+/* ---------- Start ---------- */
+if (typeof document!=='undefined' && document.getElementById('app') && typeof window!=='undefined' && !window.__TEST__){
+  S = load();
+  render();
+  setInterval(()=>{ if (S.started){ const c=document.getElementById('clock'); if (c){ render(); } } }, 60000);
+}
+if (typeof module!=='undefined') module.exports = {CLOUD, S:()=>S, setS:s=>{S=s;}, defaultState, rrPairs, scheduleSlots, endDefs, scheduleEnd, estimate, standings, structure, loadDemo, buildCtx, startTournament, drawTeams, drawGroups, canStart, uid, getUnits};
+</script>
+
+<!-- Cloud-Anbindung: Firebase (Login + Firestore). Ohne gültige config.js läuft die App rein lokal. -->
+<script type="module">
+(async () => {
+  const App = window.IdyllApp; if (!App) return;
+  let cfg;
+  try { cfg = await import('./config.js'); } catch (e) { return; }           // z. B. Datei per Doppelklick geöffnet → lokal
+  const { firebaseConfig, OWNER_UID } = cfg;
+  if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).startsWith('DEIN')) return;
+  try {
+    const V = '10.12.2', B = 'https://www.gstatic.com/firebasejs/' + V + '/';
+    const [{ initializeApp }, { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut },
+           { getFirestore, doc, onSnapshot, setDoc }] =
+      await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]);
+    const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+    const ref = doc(db, 'tournament', 'current');
+    const clientId = Math.random().toString(36).slice(2);
+    let role = 'guest', unsub = null;
+
+    App.setCloud({
+      mode: 'cloud', role: 'guest', status: 'connecting',
+      login: () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => App.toast('Anmeldung fehlgeschlagen (' + (e.code || e.message) + ')', true)),
+      logout: () => signOut(auth),
+      push: async (s) => {
+        try {
+          await setDoc(ref, { state: JSON.stringify(s), rev: s._rev || 0, by: clientId, updatedAt: Date.now() });
+          App.setStatus('ok');
+        } catch (e) { console.error(e); App.setStatus('error'); }
+      }
+    });
+
+    onAuthStateChanged(auth, (u) => {
+      role = (u && OWNER_UID && u.uid === OWNER_UID) ? 'host' : 'guest';
+      App.setUser(u);
+      if (u && !OWNER_UID) App.showUid(u.uid);
+      if (u && OWNER_UID && u.uid !== OWNER_UID) App.toast('Dieses Konto darf nichts ändern – du siehst die Live-Ansicht.', true);
+      App.setRole(role);
+      if (unsub) unsub();
+      unsub = onSnapshot(ref, (snap) => {
+        App.setStatus('ok');
+        if (!snap.exists()) {
+          if (role === 'host') App.pushIfAny(); else App.applyRemote(null);
+          return;
+        }
+        const d = snap.data();
+        if (role === 'host' && d.by === clientId) return;                       // eigene Änderung
+        if (role === 'host' && (App.state._rev || 0) > (d.rev || 0)) { App.pushNow(); return; }   // lokal ist neuer
+        try { App.applyRemote(JSON.parse(d.state)); } catch (e) { console.error(e); }
+      }, (err) => { console.error(err); App.setStatus('error'); });
+    });
+  } catch (e) {
+    console.error('Cloud nicht verfügbar', e);
+    App.setCloud({ mode: 'cloud', role: 'local', status: 'error' });
+  }
+})();
+</script>
+</body>
+</html>
