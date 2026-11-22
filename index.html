@@ -214,6 +214,7 @@ function defaultState(){
       platz: {pts:301, rounds:15, in:'Straight In', out:'Master Out'},
       finale:{pts:501, rounds:15, in:'Straight In', out:'Master Out'}
     },
+    endCut:0,             // Endrunde kürzen: 0 = komplett, sonst nur Plätze 1..endCut ausspielen (8 oder 4)
     startRule:'random',   // Anwurf in der Endrunde: random | seed | bull
     start:{},             // ausgeloster Anwurf je Endrunden-Spiel
     teams:null, groups:null,
@@ -286,6 +287,13 @@ const seed = (g,r)=>({t:'seed',g,r});
 const WIN  = k=>({t:'W',k});
 const LOS  = k=>({t:'L',k});
 
+// Endrunde kürzen: nur Spiele um die Plätze 1..cut bleiben, alle übrigen Plätze richten sich nach der Vorrunde
+function applyCut(defs, cut){
+  if (!cut) return defs;
+  const kept = defs.filter(d => (d.lo ?? d.pw) <= cut);
+  kept.bye = null;
+  return kept;
+}
 function endDefs(st, lastPlace){
   const defs = [];
   const add = d => { defs.push(d); return d; };
@@ -295,9 +303,9 @@ function endDefs(st, lastPlace){
     for (let k=1;k<=Math.floor(g/2);k++){
       const r1=2*k-1, r2=2*k, lo=4*k-3;
       add({key:`K${k}a`, stage:1, pri:k, a:seed('A',r1), b:seed('B',r2),
-           label:(k===1?'Halbfinale 1':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r1}A vs ${r2}B)`, cross:true});
+           label:(k===1?'Halbfinale 1':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r1}A vs ${r2}B)`, cross:true, lo});
       add({key:`K${k}b`, stage:1, pri:k, a:seed('A',r2), b:seed('B',r1),
-           label:(k===1?'Halbfinale 2':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r2}A vs ${r1}B)`, cross:true});
+           label:(k===1?'Halbfinale 2':`Kreuzspiel Plätze ${lo}–${lo+3}`)+` (${r2}A vs ${r1}B)`, cross:true, lo});
       add({key:`P${lo}`,   stage:2, pri:500-lo,   a:WIN(`K${k}a`), b:WIN(`K${k}b`), pw:lo,   pl:lo+1});
       add({key:`P${lo+2}`, stage:2, pri:500-lo-2, a:LOS(`K${k}a`), b:LOS(`K${k}b`), pw:lo+2, pl:lo+3});
       lowestKey = `P${lo+2}`;
@@ -366,13 +374,13 @@ function scheduleEnd(defs){
 }
 
 /* ---------- Zeitprognose ---------- */
-function estimate(format, n, rules, times, pauseMin, lastPlace){
+function estimate(format, n, rules, times, pauseMin, lastPlace, endCut){
   if (n<3 || (format==='kurz' && n<4)) return null;
   const st = structure(format,n);
   const vorSlots = format==='kurz' ? Math.max(C2(st.gA),C2(st.gB))
                                    : scheduleSlots(rrPairs(RANGE(n)),2).length;
   const vorMin = vorSlots*slotMin(rules.vor,times);
-  const defs = scheduleEnd(endDefs(st,lastPlace));
+  const defs = scheduleEnd(applyCut(endDefs(st,lastPlace), endCut));
   const slotDur = {};
   defs.forEach(d=>{ slotDur[d.slot]=Math.max(slotDur[d.slot]||0, slotMin(rules[d.rule],times)); });
   const endMin = Object.values(slotDur).reduce((a,b)=>a+b,0);
@@ -532,7 +540,7 @@ function buildCtx(){
   if (ctx.vorDone){
     const st = S.format==='kurz' ? structure('kurz', units.length) : structure('lang', units.length);
     if (S.format==='kurz'){ st.gA=groups.A.length; st.gB=groups.B.length; }
-    const defs = scheduleEnd(endDefs(st, S.lastPlace));
+    const defs = scheduleEnd(applyCut(endDefs(st, S.lastPlace), S.endCut));
     const out = {};
     const unitOf = ref=>{
       if (ref.t==='seed'){ const r=ctx.stand[ref.g][ref.r-1]; return r?r.id:null; }
@@ -560,6 +568,18 @@ function buildCtx(){
       const r = ctx.stand[defs.bye.seed.g][defs.bye.seed.r-1];
       if (r){ ctx.places[defs.bye.place]=r.id; ctx.bye = {unit:r.id, place:defs.bye.place}; }
     }
+    // Gekürzte Endrunde: übrige Plätze nach Vorrunden-Tabelle (Gruppenrang, dann Punkte, dann Verlierer-Score)
+    ctx.cut = S.endCut || 0; ctx.cutPlaces = new Set();
+    if (ctx.cut){
+      const rows = [];
+      Object.keys(ctx.stand).forEach(g=>ctx.stand[g].forEach(r=>rows.push({r,g})));
+      rows.sort((x,y)=> x.r.rank-y.r.rank || y.r.pts-x.r.pts || x.r.ls-y.r.ls || (x.g>y.g?1:x.g<y.g?-1:0) || x.r.sn-y.r.sn);
+      // Wer in einem ausgespielten Spiel steht, bekommt seinen Platz aus dem Spiel; alle anderen werden nach der Vorrunde eingereiht
+      const inGames = new Set();
+      defs.forEach(d=>[d.a,d.b].forEach(ref=>{ if (ref.t==='seed'){ const r = ctx.stand[ref.g][ref.r-1]; if (r) inGames.add(r.id); } }));
+      let p = ctx.cut + 1;
+      rows.forEach(({r})=>{ if (!inGames.has(r.id)){ ctx.places[p] = r.id; ctx.cutPlaces.add(p); p++; } });
+    }
   }
   ctx.allDone = ctx.vorDone && ctx.endDone;
   return ctx;
@@ -567,6 +587,22 @@ function buildCtx(){
 
 /* ---------- Ergebnis speichern ---------- */
 // Automatisches Speichern: sobald Sieger UND gültiger Rest vorhanden sind.
+// Endrunde kürzen: nicht erlaubt, wenn ein dabei entfallendes Spiel schon gespielt/gestartet wurde
+function setEndCut(level){
+  level = parseInt(level,10) || 0;
+  if (S.started){
+    const ctx = buildCtx();
+    if (ctx.vorDone){
+      const st = S.format==='kurz' ? structure('kurz', ctx.units.length) : structure('lang', ctx.units.length);
+      if (S.format==='kurz'){ st.gA=S.groups.A.length; st.gB=S.groups.B.length; }
+      const full = endDefs(st, S.lastPlace);
+      const keep = new Set(applyCut(full, level).map(d=>d.key));
+      const blocked = full.filter(d=>!keep.has(d.key) && S.end[d.key] && (S.end[d.key].winner || S.end[d.key].running));
+      if (blocked.length){ toast('Nicht möglich: Ein Spiel, das dabei entfallen würde, wurde schon gestartet oder gespielt.', true); render(); return; }
+    }
+  }
+  S.endCut = level; commit();
+}
 function commitGame(key){
   const ctx = buildCtx();
   const g = findGame(ctx,key); if (!g || !g.a || !g.b) return false;
@@ -735,7 +771,7 @@ function renderSetup(ctx){
   const n = planUnitCount(), p = S.players.length;
   const locked = S.started;
   const ests = {};
-  ['kurz','lang'].forEach(f=>{ try{ ests[f] = estimate(f,n,S.rules,S.times,S.pauseMin,S.lastPlace); }catch(e){ ests[f]=null; } });
+  ['kurz','lang'].forEach(f=>{ try{ ests[f] = estimate(f,n,S.rules,S.times,S.pauseMin,S.lastPlace,S.endCut); }catch(e){ ests[f]=null; } });
   const budget = S.hours*60;
   // Empfehlung
   let rec = null;
@@ -755,10 +791,10 @@ function renderSetup(ctx){
       if (ests[other] && ests[other].total<=budget) alts.push(`Format <b>${other==='kurz'?'Kurz / Kompakt':'Lang / Ausführlich'}</b> (≈ ${fmtMin(ests[other].total)})`);
       if (S.mode==='single' && p>=6){
         const nn = Math.floor(p/2);
-        ['kurz','lang'].forEach(f=>{ try{ const e=estimate(f,nn,S.rules,S.times,S.pauseMin,S.lastPlace); if(e&&e.total<=budget) alts.push(`<b>Doppel-Modus</b> mit ${nn} Teams im Format ${f==='kurz'?'Kurz':'Lang'} (≈ ${fmtMin(e.total)})`); }catch(_){} });
+        ['kurz','lang'].forEach(f=>{ try{ const e=estimate(f,nn,S.rules,S.times,S.pauseMin,S.lastPlace,S.endCut); if(e&&e.total<=budget) alts.push(`<b>Doppel-Modus</b> mit ${nn} Teams im Format ${f==='kurz'?'Kurz':'Lang'} (≈ ${fmtMin(e.total)})`); }catch(_){} });
       }
       if (S.rules.vor.pts>201){
-        try{ const r2 = JSON.parse(JSON.stringify(S.rules)); r2.vor.pts=201; const e=estimate(S.format,n,r2,S.times,S.pauseMin,S.lastPlace); if(e&&e.total<=budget) alts.push(`Vorrunde nur <b>201</b> statt ${S.rules.vor.pts} (≈ ${fmtMin(e.total)})`);}catch(_){}
+        try{ const r2 = JSON.parse(JSON.stringify(S.rules)); r2.vor.pts=201; const e=estimate(S.format,n,r2,S.times,S.pauseMin,S.lastPlace,S.endCut); if(e&&e.total<=budget) alts.push(`Vorrunde nur <b>201</b> statt ${S.rules.vor.pts} (≈ ${fmtMin(e.total)})`);}catch(_){}
       }
       if (S.pauseMin>0){
         const e2 = cur.total-S.pauseMin; if (e2<=budget) alts.push(`Essenpause streichen (≈ ${fmtMin(e2)})`);
@@ -800,6 +836,7 @@ function renderSetup(ctx){
       ${estRow('kurz','Kurz / Kompakt','2 Gruppen (A = Automat 1, B = Automat 2), Jeder-gegen-Jeden, danach Kreuz- &amp; Platzierungsspiele über alle Plätze. Ab ca. 12 Teilnehmern.',ests,rec==='kurz')}
       ${estRow('lang','Lang / Ausführlich','Eine große Gruppe (Jeder-gegen-Jeden auf beiden Automaten), danach Platzierungsspiele &amp; Finale. Bis ca. 8–10 Teilnehmer.',ests,rec==='lang')}
     </div>
+    <div style="margin-top:12px">${endCutControl(n)}</div>
     ${recBtn}${timeMsg}
     <details><summary>Spieldauer &amp; Details anpassen</summary>
       <div class="grid2"><div><label class="small muted">Min. pro 301-Spiel</label><input type="number" step="0.5" min="3" data-set="times.m301" data-num="1" value="${S.times.m301}"></div>
@@ -874,6 +911,10 @@ function renderVor(ctx){
 }
 
 /* ---------- Tab: Endrunde ---------- */
+function endCutControl(n){
+  const opts = [[0,'Komplett ausspielen (alle Plätze)']].concat([8,4].filter(v=>v<n).map(v=>[v,`Nur Plätze 1–${v} ausspielen, Rest nach Vorrunden-Tabelle`]));
+  return `<div><label class="small muted">Endrunde kürzen</label><select data-endcut>${opts.map(([v,l])=>`<option value="${v}" ${(S.endCut||0)===v?'selected':''}>${l}</option>`).join('')}</select></div>`;
+}
 function renderEnd(ctx){
   if (!S.started) return `<div class="card"><h2>Endrunde</h2><p class="muted">Noch nicht gestartet.</p></div>`;
   if (!ctx.vorDone){
@@ -886,6 +927,7 @@ function renderEnd(ctx){
   const list = ctx.end.map(g=>endGameView(g,ctx));
   const fin = list.filter(g=>g.status==='done').length;
   let h = `<div class="progress"><b>Endrunde: ${fin} / ${list.length} Spiele</b><div class="bar"><i style="width:${fin/list.length*100}%"></i></div></div>`;
+  h += `<div class="card">${endCutControl(ctx.units.length)}${ctx.cut?`<div class="msg info small" style="margin-bottom:0">Gekürzte Endrunde: Es werden nur die Plätze 1–${ctx.cut} ausgespielt. Die Plätze ${ctx.cut+1}–${ctx.units.length} richten sich nach der Vorrunden-Tabelle (Gruppenrang, dann Punkte, dann Verlierer-Score).</div>`:'<div class="muted small" style="margin-top:6px">Zu wenig Zeit? Hier lässt sich die Endrunde jederzeit kürzen, solange die entfallenden Spiele noch nicht gespielt sind.</div>'}</div>`;
   const tieWarn = Object.keys(ctx.stand).some(g=>ctx.stand[g].some(r=>r.tie));
   if (tieWarn) h += `<div class="msg warn">Achtung: In der Vorrunde gibt es einen nicht aufgelösten Gleichstand. Die Paarungen nutzen vorläufig die Startnummer – Ausbullen-Rang in der Vorrunden-Tabelle eintragen (Paarungen aktualisieren sich automatisch).</div>`;
   if (ctx.bye) h += `<div class="msg info"><b>Freilos:</b> ${esc(ctx.U[ctx.bye.unit].name)} (letzter Platz der größeren Gruppe) belegt Platz ${ctx.bye.place}.</div>`;
@@ -927,7 +969,7 @@ function renderResult(ctx){
   let rows = '';
   for (let pl=1;pl<=N;pl++){
     const id = P[pl];
-    rows += `<tr><td><b>${pl}.</b></td><td class="l nm">${id?nm(id):'<span class="muted">offen</span>'}</td><td>${id?vorRank[id]||'':''}</td><td>${id?(wins[id]||0):''}</td></tr>`;
+    rows += `<tr><td><b>${pl}.</b></td><td class="l nm">${id?nm(id):'<span class="muted">offen</span>'}${ctx.cutPlaces&&ctx.cutPlaces.has(pl)?' <span class="pill" title="Endrunde gekürzt: Platz nach Vorrunden-Tabelle">nach Vorrunde</span>':''}</td><td>${id?vorRank[id]||'':''}</td><td>${id?(wins[id]||0):''}</td></tr>`;
   }
   h += `<div class="card"><h2>Gesamtplatzierung</h2><table class="t"><thead><tr><th>Platz</th><th class="l">Name</th><th>Vorrunde</th><th>Siege gesamt</th></tr></thead><tbody>${rows}</tbody></table>
      </div>`;
@@ -963,7 +1005,7 @@ function remainingMin(ctx){
   S.vor.filter(v=>!v.winner).forEach(v=>{ per[v.machine]=(per[v.machine]||0)+slotMin(S.rules.vor,t); });
   let rem = Math.max(0,...Object.values(per));
   if (!ctx.vorDone){
-    try{ const n=ctx.units.length; const e=estimate(S.format,n,S.rules,t,0,S.lastPlace); if(e) rem+=e.endMin; }catch(_){}
+    try{ const n=ctx.units.length; const e=estimate(S.format,n,S.rules,t,0,S.lastPlace,S.endCut); if(e) rem+=e.endMin; }catch(_){}
   } else {
     const slots = {};
     ctx.end.forEach(g=>{ if(!(g.res&&g.res.winner)) slots[g.slot]=Math.max(slots[g.slot]||0, slotMin(S.rules[g.def.rule],t)); });
@@ -1222,6 +1264,7 @@ document.addEventListener('change', e=>{
   if (isViewOnly()) return;
   if (t.id==='impFile'){ if (t.files[0]) importJson(t.files[0]); t.value=''; return; }
   if (t.dataset && t.dataset.ls){ clearTimeout(lsTimer); commitGame(t.dataset.ls); return; }
+  if (t.dataset && t.dataset.endcut!==undefined){ setEndCut(t.value); return; }
   if (t.dataset && t.dataset.set){
     let v = t.value;
     if (t.dataset.num){ v = parseFloat(String(v).replace(',','.')); if (!Number.isFinite(v)) return; }

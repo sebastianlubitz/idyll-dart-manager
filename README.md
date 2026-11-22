@@ -1,4 +1,4 @@
-# Idyll Dart-Manager
+﻿# Idyll Dart-Manager
 
 Turnierverwaltung für das Kneipen-Dartturnier im Idyll: Auslosung (Einzel/Doppel), Spielpläne für 2 Automaten, Live-Tabellen mit Verlierer-Score, Endrunde mit Kreuz- und Platzierungsspielen, Gesamtergebnis und Fun-Stats.
 
@@ -12,6 +12,7 @@ Turnierverwaltung für das Kneipen-Dartturnier im Idyll: Auslosung (Einzel/Doppe
 - **Anlegen:** Name und Passwort (mind. 8 Zeichen) vergeben. Das Turnier bekommt einen **Code** und einen Link (`…/#t=AB12CD`).
 - **Zuschauen:** Jeder mit dem Link sieht Tabellen, Spielplan und Endrunde **live**, ohne Konto und ohne Passwort.
 - **Bearbeiten:** Oben auf **Bearbeiten (Passwort)** tippen und das Turnier-Passwort eingeben. Das Gerät bleibt danach freigeschaltet. Mehrere Geräte/Personen mit dem Passwort können gleichzeitig arbeiten (der zuletzt gespeicherte Stand gewinnt).
+- **Endrunde kürzen:** Reicht die Zeit nicht, lässt sich die Endrunde jederzeit (auch mitten im Turnier) auf die Plätze 1–8 oder 1–4 kürzen. Die übrigen Plätze richten sich dann nach der Vorrunden-Tabelle. Geht nur, solange die entfallenden Spiele noch nicht gespielt sind.
 - **Mehrere Turniere:** Über **☰ Turniere** zurück zur Startseite, jedes Turnier hat eigenen Code und eigenes Passwort.
 - **Sicherheit:** Der Browser rechnet das Passwort in einen Hash um. Nur dieser Hash liegt in der Datenbank, in einem Dokument, das niemand lesen kann. Die Firestore-Regeln lassen nur Geräte schreiben, die den passenden Hash eingereicht haben. Wähle ein Passwort, das niemand erraten kann: Es gibt keine Sperre nach Fehlversuchen.
 
