@@ -162,6 +162,11 @@ body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-even
 .gl h4{margin:0 0 8px}
 .unit{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}
 .unit:last-child{border:none}.unit .nm{flex:1}
+/* Schmale Bildschirme: Kopfzeile scrollt mit, nur die Reiter bleiben oben */
+@media(max-width:900px){
+  header.top{position:static}
+  nav.tabs{top:0}
+}
 @media print{
   body{background:#fff;color:#000}header.top,nav.tabs,.tools,.btn{display:none!important}
   .card,.stat,.pod{background:#fff;color:#000;border-color:#999}.muted{color:#444}
@@ -1263,7 +1268,11 @@ document.addEventListener('change', e=>{
   const t = e.target;
   if (isViewOnly()) return;
   if (t.id==='impFile'){ if (t.files[0]) importJson(t.files[0]); t.value=''; return; }
-  if (t.dataset && t.dataset.ls){ clearTimeout(lsTimer); commitGame(t.dataset.ls); return; }
+  if (t.dataset && t.dataset.ls){
+    // Wert auch beim Verlassen des Feldes übernehmen (z. B. bei Autofill oder Einfügen ohne Tastatureingabe)
+    const k = t.dataset.ls, ed = UI.edit[k] = UI.edit[k]||{}; if (t.value!=='') ed.ls = t.value;
+    clearTimeout(lsTimer); commitGame(k); return;
+  }
   if (t.dataset && t.dataset.endcut!==undefined){ setEndCut(t.value); return; }
   if (t.dataset && t.dataset.set){
     let v = t.value;
@@ -1309,7 +1318,7 @@ if (typeof document!=='undefined' && document.getElementById('app') && typeof wi
   render();
   setInterval(()=>{ if (S.started){ const c=document.getElementById('clock'); if (c){ render(); } } }, 60000);
 }
-if (typeof module!=='undefined') module.exports = {CLOUD, S:()=>S, setS:s=>{S=s;}, defaultState, rrPairs, scheduleSlots, endDefs, scheduleEnd, estimate, standings, structure, loadDemo, buildCtx, startTournament, drawTeams, drawGroups, canStart, uid, getUnits};
+if (typeof module!=='undefined') module.exports = {CLOUD, UI, commitGame, setEndCut, applyCut, anwurfMap, render, S:()=>S, setS:s=>{S=s;}, defaultState, rrPairs, scheduleSlots, endDefs, scheduleEnd, estimate, standings, structure, loadDemo, buildCtx, startTournament, drawTeams, drawGroups, canStart, uid, getUnits};
 </script>
 
 <!-- Cloud-Anbindung: Firebase (anonyme Anmeldung + Firestore). Ohne gültige config.js läuft die App rein lokal.
