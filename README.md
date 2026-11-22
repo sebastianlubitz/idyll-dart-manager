@@ -54,4 +54,4 @@ Turnierverwaltung für das Kneipen-Dartturnier im Idyll: Auslosung (Einzel/Doppe
 4. **Notfall:** Über **Backup** lässt sich der Stand als Text sichern und über **Import** wieder einspielen.
 
 ## Lokal testen
-Die Seite braucht einen kleinen Webserver (wegen der JavaScript-Module), z. B. `npx serve`. Ohne Server (Doppelklick auf `index.html`) läuft die App im lokalen Modus ohne Cloud.
+Die Seite braucht einen kleinen Webserver (wegen der JavaScript-Module), z. B. `npx serve`. Der API-Schlüssel ist auf `https://sebastianlubitz.github.io/*` beschränkt (Google Cloud Console → APIs und Dienste → Anmeldedaten), deshalb funktioniert die Cloud nur dort. Lokal wählst du auf der Startseite **Lokal im Browser spielen**. Soll die Cloud auch lokal laufen, trägst du dort zusätzlich `http://localhost:*` ein.
