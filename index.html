@@ -14,7 +14,7 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
-header.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#10151d,#0c0f14);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+header.top{background:linear-gradient(180deg,#10151d,#0c0f14);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
 .logo{font-size:1.35rem;font-weight:800;letter-spacing:.3px}
 .logo span{color:var(--red)}
 .logo .idyll{color:#3ee08a;font-family:"Brush Script MT","Segoe Script","Snell Roundhand",cursive;font-size:1.9rem;font-weight:700;text-shadow:0 0 10px rgba(62,224,138,.55);letter-spacing:0}
@@ -22,7 +22,8 @@ header.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#1
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.85rem;color:var(--mute)}
 .chip b{color:var(--text)}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
-nav.tabs{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;background:var(--bg);position:sticky;top:57px;z-index:15}
+.stickybar{position:sticky;top:0;z-index:20;display:flex;align-items:flex-end;gap:12px;padding:10px 16px 0;background:var(--bg)}
+nav.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0}
 nav.tabs button{background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:12px 12px 0 0;padding:12px 18px;min-height:48px;cursor:pointer;color:var(--mute);font-weight:600;white-space:nowrap}
 nav.tabs button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 3px 0 var(--red)}
 nav.tabs button .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px}
@@ -99,7 +100,7 @@ button.side:hover{border-color:#5b6f92}
 .entry .grow{flex:1}
 .slotrow{display:grid;grid-template-columns:44px 1fr 1fr;gap:10px;align-items:start}
 .slotrow .no{background:var(--panel2);border-radius:10px;text-align:center;padding:8px 0;font-weight:800;color:var(--mute)}
-.slothead{display:grid;grid-template-columns:44px 1fr 1fr;gap:10px;margin-bottom:8px;font-weight:800;position:sticky;top:112px;z-index:5;background:var(--panel);padding:6px 0}
+.slothead{display:grid;grid-template-columns:44px 1fr 1fr;gap:10px;margin-bottom:8px;font-weight:800;position:sticky;top:var(--hd-h,110px);z-index:5;background:var(--panel);padding:6px 0}
 @media(max-width:700px){.slotrow,.slothead{grid-template-columns:1fr}.slotrow .no{text-align:left;padding:4px 10px}.slothead{display:none}}
 table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 table.t th,table.t td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
@@ -162,10 +163,29 @@ body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-even
 .gl h4{margin:0 0 8px}
 .unit{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}
 .unit:last-child{border:none}.unit .nm{flex:1}
-/* Schmale Bildschirme: Kopfzeile scrollt mit, nur die Reiter bleiben oben */
+/* Timer: wie lange das Turnier voraussichtlich noch dauert */
+.timerwrap:empty{display:none}
+.timer{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel)}
+.timer .ti{font-size:1.6rem;line-height:1}
+.timer b{font-size:1.25rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.timer small{display:block;color:var(--mute);font-size:.78rem;line-height:1.3}
+.timer .mini{margin-left:6px;min-width:0;padding:0 10px;font-size:.8rem;white-space:nowrap}
+.timer.ok{border-color:#1f6b43;background:#0f2a1c}
+.timer.warn{border-color:#7a5d10;background:#2f2508}
+.timer.over{border-color:#8a2438;background:#32121a}
+.timer.done{border-color:#a8861f;background:#2a2210}
+.stickybar .timerwrap{flex:none;margin-bottom:8px}
+body.landing .stickybar{display:none}
+/* Schmale Bildschirme: Timer über den Reitern in voller Breite */
 @media(max-width:900px){
-  header.top{position:static}
-  nav.tabs{top:0}
+  .stickybar{flex-wrap:wrap;gap:8px}
+  .stickybar .timerwrap{order:-1;width:100%;margin-bottom:0}
+  .stickybar .timer{width:100%;padding:5px 12px}
+  .stickybar .timer .ptxt,.stickybar .timer .lbl{display:none}
+  .stickybar .timer .ti{font-size:1.3rem}
+  .stickybar .timer b{font-size:1.1rem}
+  .stickybar .timer>div{flex:1}
+  .stickybar .timer .mini{margin-left:auto}
 }
 @media print{
   body{background:#fff;color:#000}header.top,nav.tabs,.tools,.btn{display:none!important}
@@ -187,7 +207,10 @@ body.viewonly .gmain .side,body.viewonly input,body.viewonly select{pointer-even
     <input type="file" id="impFile" accept=".json,application/json" hidden>
   </div>
 </header>
-<nav class="tabs" id="tabs"></nav>
+<div class="stickybar" id="stickybar">
+  <nav class="tabs" id="tabs"></nav>
+  <div id="timer" class="timerwrap"></div>
+</div>
 <main id="app"></main>
 <div id="modal"><div class="mbox" id="mbox"></div></div>
 <div id="toast"></div>
@@ -223,7 +246,7 @@ function defaultState(){
     startRule:'random',   // Anwurf in der Endrunde: random | seed | bull
     start:{},             // ausgeloster Anwurf je Endrunden-Spiel
     teams:null, groups:null,
-    started:false, startedAt:null,
+    started:false, startedAt:null, finishedAt:null, pauseDone:false,
     vor:[], end:{}, bull:{},
     tab:'setup'
   };
@@ -522,7 +545,7 @@ function startTournament(){
     const ids = U.map(u=>u.id), map = anwurfMap(ids);
     scheduleSlots(rrPairs(ids),2).forEach((slot,t)=>slot.forEach((p,i)=>mk(map,'X',i+1,t,p)));
   }
-  S.vor = vor; S.end = {}; S.start = {}; S.bull = {}; S.started = true; S.startedAt = Date.now(); S.tab = 'vor';
+  S.vor = vor; S.end = {}; S.start = {}; S.bull = {}; S.started = true; S.startedAt = Date.now(); S.finishedAt = null; S.pauseDone = false; S.tab = 'vor';
 }
 
 /* ---------- Kontext (abgeleitete Daten) ---------- */
@@ -910,7 +933,7 @@ function renderVor(ctx){
     h += '</div>';
   } else {
     const list = S.vor.map(v=>vorGameView(v,ctx));
-    h += `<div class="lang"><section class="card">${slotGrid(list,ctx)}</section><aside style="position:sticky;top:120px">${tableHtml('X',ctx,'Live-Tabelle')}</aside></div>`;
+    h += `<div class="lang"><section class="card">${slotGrid(list,ctx)}</section><aside style="position:sticky;top:calc(var(--hd-h,110px) + 8px)">${tableHtml('X',ctx,'Live-Tabelle')}</aside></div>`;
   }
   return h;
 }
@@ -1016,7 +1039,26 @@ function remainingMin(ctx){
     ctx.end.forEach(g=>{ if(!(g.res&&g.res.winner)) slots[g.slot]=Math.max(slots[g.slot]||0, slotMin(S.rules[g.def.rule],t)); });
     rem = Object.values(slots).reduce((a,b)=>a+b,0);
   }
-  return rem;
+  return rem + (S.pauseDone ? 0 : (+S.pauseMin||0));      // Essenpause zählt, bis sie als erledigt markiert ist
+}
+let LASTCTX = null;
+function timerHtml(ctx){
+  if (!S.started || !ctx) return '';
+  if (ctx.allDone){
+    const end = S.finishedAt || Date.now(), dur = Math.max(0,(end-S.startedAt)/60000);
+    return `<div class="timer done"><span class="ti">🏆</span><div><b>Turnier beendet</b><small>Dauer ${fmtMin(dur)} · ${clock(new Date(S.startedAt))}–${clock(new Date(end))} Uhr</small></div></div>`;
+  }
+  const budget = (+S.hours||5)*60, rem = remainingMin(ctx), elapsed = (Date.now()-S.startedAt)/60000, over = elapsed + rem - budget;
+  const cls = over>0 ? 'over' : (over>-10 ? 'warn' : 'ok');
+  const verdict = over>0 ? `ca. ${Math.round(over)} Min. über dem Zeitbudget` : `${Math.round(-over)} Min. Puffer`;
+  const withPause = !S.pauseDone && S.pauseMin>0;
+  const pauseBtn = withPause && !isViewOnly() ? `<button class="mini" data-act="pauseDone" title="Essenpause ist vorbei – Prognose ohne Pause rechnen">☕<span class="lbl"> Pause rum</span></button>` : '';
+  return `<div class="timer ${cls}"><span class="ti">⏱</span><div><b>noch ca. ${fmtMin(rem)}</b><small>Ende ≈ ${clock(new Date(Date.now()+rem*60000))} Uhr · ${verdict}${withPause?`<span class="ptxt"> · inkl. ${S.pauseMin} Min. Pause</span>`:''}</small></div>${pauseBtn}</div>`;
+}
+function updateTimer(){
+  const a = document.getElementById('timer');
+  if (a) a.innerHTML = (!inLanding() && LASTCTX) ? timerHtml(LASTCTX) : '';
+  try{ document.documentElement.style.setProperty('--hd-h', document.getElementById('stickybar').offsetHeight + 'px'); }catch(e){}
 }
 function renderChips(ctx){
   const c = [];
@@ -1032,10 +1074,7 @@ function renderChips(ctx){
     const ph = ctx.allDone?'Abgeschlossen':(ctx.vorDone?'Endrunde':'Vorrunde');
     c.push(`<span class="chip">Phase: <b>${ph}</b></span>`);
     c.push(`<span class="chip">Spiele: <b>${ctx.vorFin+(ctx.end||[]).filter(g=>g.res&&g.res.winner).length}</b></span>`);
-    if (!ctx.allDone){
-      const rem = remainingMin(ctx);
-      c.push(`<span class="chip" id="clock">Läuft seit <b>${clock(new Date(S.startedAt))}</b> · Rest ≈ <b>${fmtMin(rem)}</b> · Ende ≈ <b>${clock(new Date(Date.now()+rem*60000))}</b></span>`);
-    } else c.push(`<span class="chip">🏆 Turnier beendet</span>`);
+    c.push(`<span class="chip">Start: <b>${clock(new Date(S.startedAt))}</b></span>`);
   }
   return c.join('');
 }
@@ -1061,6 +1100,7 @@ function renderLanding(){
 function render(){
   document.body.classList.toggle('landing', inLanding());
   if (inLanding()){
+    LASTCTX = null; updateTimer(); document.body.classList.remove('has-timer');
     document.getElementById('chips').innerHTML = '<span class="chip">Mehrere Turniere · <b>Cloud</b></span>';
     document.getElementById('tabs').innerHTML = '';
     document.body.classList.remove('viewonly');
@@ -1071,6 +1111,13 @@ function render(){
   let ctx;
   try { ctx = buildCtx(); if (ensureStarters(ctx)) save(); } catch(e){ console.error(e); ctx = {units:getUnits(),U:{},started:false}; }
   document.getElementById('chips').innerHTML = renderChips(ctx);
+  // Endzeit merken (nur Bearbeiter), wieder löschen, falls ein Ergebnis zurückgenommen wird
+  if (!isViewOnly() && S.started){
+    if (ctx.allDone && !S.finishedAt){ S.finishedAt = Date.now(); save(); }
+    else if (!ctx.allDone && S.finishedAt){ S.finishedAt = null; save(); }
+  }
+  LASTCTX = ctx; updateTimer();
+  document.body.classList.toggle('has-timer', !!S.started);
   document.body.classList.toggle('viewonly', isViewOnly());
   const ab = document.getElementById('authBtn');
   ab.hidden = CLOUD.mode!=='cloud';
@@ -1203,6 +1250,7 @@ document.addEventListener('click', e=>{
   const cloudActs = ['authToggle','leave','copyLink','openCode','openRecent','createT','goLocal'];
   if (isViewOnly() && !cloudActs.includes(a)) return;     // Live-Ansicht: nichts verändern
   switch(a){
+    case 'pauseDone': S.pauseDone = true; commit(); break;
     case 'authToggle': if (CLOUD.role==='host') CLOUD.stopEdit && CLOUD.stopEdit(); else CLOUD.startEdit && CLOUD.startEdit(); break;
     case 'leave': CLOUD.leave && CLOUD.leave(); break;
     case 'copyLink': {
@@ -1316,7 +1364,8 @@ window.IdyllApp = {
 if (typeof document!=='undefined' && document.getElementById('app') && typeof window!=='undefined' && !window.__TEST__){
   S = load();
   render();
-  setInterval(()=>{ if (S.started){ const c=document.getElementById('clock'); if (c){ render(); } } }, 60000);
+  setInterval(updateTimer, 15000);      // Timer läuft live mit (ohne die Seite neu zu zeichnen)
+  window.addEventListener('resize', updateTimer);
 }
 if (typeof module!=='undefined') module.exports = {CLOUD, UI, commitGame, setEndCut, applyCut, anwurfMap, render, S:()=>S, setS:s=>{S=s;}, defaultState, rrPairs, scheduleSlots, endDefs, scheduleEnd, estimate, standings, structure, loadDemo, buildCtx, startTournament, drawTeams, drawGroups, canStart, uid, getUnits};
 </script>
